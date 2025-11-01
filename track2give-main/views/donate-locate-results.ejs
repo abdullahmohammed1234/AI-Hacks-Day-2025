@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .results-hero { padding:4.5rem 1rem 1.5rem; }
+    .bank-card { background:white; border-radius:10px; padding:1rem; border:1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <%- include('partials/header', { user: user, currentPage: currentPage }) %>
+
+  <main style="max-width:1100px;margin:2rem auto;padding:0 1rem;">
+    <section class="results-hero">
+      <h1>Food Banks near <%= postal %></h1>
+      <p style="color:#6b7280;">Here are the food banks we found near your area.</p>
+    </section>
+
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;">
+      <% results.forEach(b => { 
+           const mapsQuery = encodeURIComponent(b.address + ' ' + (b.name || ''));
+      %>
+        <div class="bank-card">
+          <h3 style="margin:0"><%= b.name %></h3>
+          <p style="margin:.25rem 0 0 0;color:#6b7280;"><%= b.address %></p>
+          <p style="margin:.25rem 0 0 0;color:#6b7280;">Phone: <%= b.phone %></p>
+          <div style="margin-top:.75rem; display:flex; gap:.5rem;">
+            <a class="btn btn-primary" href="https://www.google.com/maps/dir/?api=1&destination=<%= mapsQuery %>" target="_blank" rel="noopener noreferrer">Get directions</a>
+            <a class="btn btn-secondary" href="tel:<%= b.phone %>">Call</a>
+          </div>
+        </div>
+      <% }); %>
+    </section>
+
+    <div style="margin-top:1.5rem; text-align:center;">
+      <a href="/donate" class="btn btn-primary">Back to Donate</a>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>
