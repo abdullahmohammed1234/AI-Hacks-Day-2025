@@ -35,6 +35,7 @@ const scanRoutes = require("./routes/scan");
 const leaderboardRoutes = require("./routes/leaderboard");
 const carbonRoutes = require("./routes/carbon");
 const shoppingRoutes = require("./routes/shopping");
+const githubRoutes = require("./routes/github");
 
 const app = express();
 const port = 3000;
@@ -86,6 +87,7 @@ app.use(scanRoutes);
 app.use(leaderboardRoutes);
 app.use(carbonRoutes);
 app.use(shoppingRoutes);
+app.use("/api/github", githubRoutes);
 
 // Homepage/Landing page
 app.get("/", async (req, res) => {

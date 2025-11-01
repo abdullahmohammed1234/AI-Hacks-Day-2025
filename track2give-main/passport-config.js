@@ -2,6 +2,7 @@ const passport = require("passport");
 // Google OAuth temporarily disabled - using email/password only
 // const GoogleStrategy = require("passport-google-oauth20").Strategy;
 // const AppleStrategy = require("passport-apple");
+const GitHubStrategy = require("passport-github2").Strategy;
 const User = require("./models/user");
 
 module.exports = function (passport) {
@@ -69,6 +70,75 @@ module.exports = function (passport) {
     )
   );
   */
+
+  // GitHub Strategy
+  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+    passport.use(
+      new GitHubStrategy(
+        {
+          clientID: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          callbackURL: process.env.GITHUB_CALLBACK_URL || "/auth/github/callback",
+          scope: ["user:email"],
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            // GitHub profile may not have email in profile, might need to fetch separately
+            let email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+            
+            // If no email in profile, use profile.username as identifier
+            // In production, you might want to fetch email from GitHub API
+            if (!email) {
+              email = `${profile.username}@github.local`; // Temporary email format
+            }
+
+            // Check if user already exists by GitHub ID or email
+            let user = await User.findOne({
+              $or: [
+                { githubId: profile.id },
+                { email: email.toLowerCase() }
+              ]
+            });
+
+            if (user) {
+              // User exists, update GitHub info if needed
+              if (!user.githubId) {
+                user.githubId = profile.id;
+                user.githubAccessToken = accessToken;
+                if (!user.profilePicture && profile.photos && profile.photos[0]) {
+                  user.profilePicture = profile.photos[0].value;
+                }
+                await user.save();
+              } else if (user.githubAccessToken !== accessToken) {
+                user.githubAccessToken = accessToken;
+                await user.save();
+              }
+              return done(null, user);
+            } else {
+              // Create new user
+              const newUser = new User({
+                email: email.toLowerCase(),
+                username: profile.username || email.split("@")[0],
+                password: "github-oauth-login", // Not used for OAuth login but required by model
+                githubId: profile.id,
+                githubAccessToken: accessToken,
+                profilePicture:
+                  profile.photos && profile.photos.length > 0
+                    ? profile.photos[0].value
+                    : "",
+              });
+
+              await newUser.save();
+              return done(null, newUser);
+            }
+          } catch (error) {
+            console.error("GitHub auth error:", error);
+            return done(error, null);
+          }
+        }
+      )
+    );
+  }
 
   // Apple Strategy
   if (

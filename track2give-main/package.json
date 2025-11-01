@@ -41,7 +41,9 @@
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "passport-github2": "^0.1.12",
+    "@octokit/rest": "^20.0.2"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",

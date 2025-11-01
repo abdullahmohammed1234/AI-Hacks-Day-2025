@@ -135,6 +135,34 @@ router.get(
 );
 
 // ------------------------
+// GITHUB OAUTH LOGIN
+// ------------------------
+router.get(
+  "/auth/github",
+  passport.authenticate("github", { scope: ["user:email"] })
+);
+
+router.get(
+  "/auth/github/callback",
+  passport.authenticate("github", {
+    failureRedirect: "/login?error=GitHub auth failed",
+    session: false,
+  }),
+  async (req, res) => {
+    try {
+      req.session.user = req.user;
+      await User.findByIdAndUpdate(req.user._id, {
+        lastLoginAt: new Date(),
+      });
+      res.redirect("/dashboard");
+    } catch (err) {
+      console.error("GitHub auth callback error:", err);
+      res.redirect("/login?error=GitHub auth failed");
+    }
+  }
+);
+
+// ------------------------
 // REGISTER (Uses same login page with tabs)
 // ------------------------
 router.post("/register", async (req, res) => {

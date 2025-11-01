@@ -18,12 +18,20 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: function () {
-        return !this.googleId; // Password required only if not using Google auth
+        return !this.googleId && !this.githubId; // Password required only if not using OAuth
       },
     },
     googleId: {
       type: String,
       sparse: true, // Allows null values for non-Google users
+    },
+    githubId: {
+      type: String,
+      sparse: true, // Allows null values for non-GitHub users
+    },
+    githubAccessToken: {
+      type: String,
+      default: null,
     },
     profilePicture: {
       type: String,
