@@ -1,183 +1,254 @@
 /**
  * Carbon Emissions Utilities Module
- * 
- * This module contains business logic for carbon footprint tracking and visualization.
- * Team Member Assignment: [ASSIGN TEAM MEMBER NAME]
- * 
- * Dependencies:
- * - models/impactStats.js
- * - models/foodItem.js
- * - utilities/impact-util.js (for IMPACT_CONSTANTS)
- * 
- * @module utilities/carbon-util
+ *
+ * Business logic for carbon footprint tracking and visualization.
  */
 
 const ImpactStats = require("../models/impactStats");
 const FoodItem = require("../models/foodItem");
 const { IMPACT_CONSTANTS } = require("./impact-util");
 
+const CAR_CO2_PER_YEAR_KG = 4600; // Average passenger vehicle
+const TREE_CO2_PER_YEAR_KG = 21.77; // Average mature tree
+
 /**
- * Get user's carbon emissions saved over time
- * 
- * Data Flow:
- * 1. Get user's ImpactStats
- * 2. Query FoodItems that are consumed within the specified period
- * 3. For each item, calculate CO2 saved based on category and quantity
- * 4. Aggregate cumulative CO2 savings over time
- * 5. Return array of data points for charting
- * 
- * @param {String} userId - User's MongoDB ObjectId
- * @param {String} period - Time period: "week", "month", "year", "all" (default: "all")
- * @returns {Promise<Array>} Array of carbon savings data points
- * 
- * Example Return:
- * [
- *   {
- *     date: Date("2024-01-15"),
- *     co2Saved: 2.5,
- *     cumulativeCO2: 2.5
- *   },
- *   {
- *     date: Date("2024-01-16"),
- *     co2Saved: 1.8,
- *     cumulativeCO2: 4.3
- *   }
- * ]
- * 
- * TODO: Implement function
+ * Get a user's carbon savings history aggregated by day.
+ * @param {String} userId
+ * @param {"week"|"month"|"year"|"all"} period
+ * @returns {Promise<Array<{date: string, co2Saved: number, cumulativeCO2: number}>>}
  */
 async function getUserCarbonHistory(userId, period = "all") {
-  // TODO:
-  // 1. Determine startDate based on period parameter
-  // 2. Query FoodItems with consumed=true and consumedDate in range
-  // 3. For each item, calculate CO2 using IMPACT_CONSTANTS and convertToKg
-  // 4. Calculate cumulative CO2 savings
-  // 5. Return array sorted by date
-  throw new Error("TODO: Implement getUserCarbonHistory");
+  if (!userId) {
+    return [];
+  }
+
+  const now = new Date();
+  let startDate = null;
+
+  switch (period) {
+    case "week":
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case "month":
+      startDate = new Date(now);
+      startDate.setMonth(startDate.getMonth() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case "year":
+      startDate = new Date(now);
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    default:
+      startDate = null;
+      break;
+  }
+
+  const query = {
+    userId,
+    consumed: true,
+    consumedDate: { $ne: null },
+  };
+
+  if (startDate) {
+    query.consumedDate.$gte = startDate;
+  }
+
+  const consumedItems = await FoodItem.find(query)
+    .select("consumedDate category quantity unit")
+    .sort({ consumedDate: 1 })
+    .lean();
+
+  const dailyTotals = new Map();
+
+  consumedItems.forEach((item) => {
+    if (!item.consumedDate) {
+      return;
+    }
+
+    const dateKey = new Date(item.consumedDate).toISOString().split("T")[0];
+    const weightInKg = convertToKg(item.quantity, item.unit);
+    const co2PerKg = IMPACT_CONSTANTS[item.category] || IMPACT_CONSTANTS.other;
+    const co2Saved = co2PerKg * weightInKg;
+
+    dailyTotals.set(dateKey, (dailyTotals.get(dateKey) || 0) + co2Saved);
+  });
+
+  const sortedDates = Array.from(dailyTotals.keys()).sort();
+  let cumulative = 0;
+
+  return sortedDates.map((dateKey) => {
+    const dailyTotal = dailyTotals.get(dateKey) || 0;
+    cumulative += dailyTotal;
+    return {
+      date: dateKey,
+      co2Saved: Math.round(dailyTotal * 100) / 100,
+      cumulativeCO2: Math.round(cumulative * 100) / 100,
+    };
+  });
 }
 
 /**
- * Get carbon savings breakdown by category
- * 
- * Data Flow:
- * 1. Query all consumed FoodItems for user
- * 2. Group by category
- * 3. Calculate total CO2 saved per category
- * 4. Count items per category
- * 5. Sort by CO2 saved descending
- * 
- * @param {String} userId - User's MongoDB ObjectId
- * @returns {Promise<Array>} Array of category-wise carbon savings
- * 
- * Example Return:
- * [
- *   {
- *     category: "meat",
- *     co2Saved: 27.5,
- *     itemCount: 10
- *   },
- *   {
- *     category: "dairy",
- *     co2Saved: 12.3,
- *     itemCount: 8
- *   }
- * ]
- * 
- * TODO: Implement function
+ * Carbon savings grouped by food category.
+ * @param {String} userId
+ * @returns {Promise<Array<{category: string, co2Saved: number, itemCount: number}>>}
  */
 async function getCarbonBreakdownByCategory(userId) {
-  // TODO:
-  // 1. Query FoodItems with consumed=true for user
-  // 2. Group by category using reduce or aggregation
-  // 3. Calculate CO2 per item using IMPACT_CONSTANTS
-  // 4. Sum CO2 and count items per category
-  // 5. Sort by CO2 saved descending
-  // 6. Return array
-  throw new Error("TODO: Implement getCarbonBreakdownByCategory");
+  if (!userId) {
+    return [];
+  }
+
+  const consumedItems = await FoodItem.find({
+    userId,
+    consumed: true,
+    consumedDate: { $ne: null },
+  })
+    .select("category quantity unit")
+    .lean();
+
+  const categoryTotals = new Map();
+
+  consumedItems.forEach((item) => {
+    const category = item.category || "other";
+    const weightInKg = convertToKg(item.quantity, item.unit);
+    const co2PerKg = IMPACT_CONSTANTS[category] || IMPACT_CONSTANTS.other;
+    const co2Saved = co2PerKg * weightInKg;
+
+    const existing = categoryTotals.get(category) || {
+      category,
+      co2Saved: 0,
+      itemCount: 0,
+    };
+
+    existing.co2Saved += co2Saved;
+    existing.itemCount += 1;
+
+    categoryTotals.set(category, existing);
+  });
+
+  return Array.from(categoryTotals.values())
+    .map((entry) => ({
+      category: entry.category,
+      co2Saved: Math.round(entry.co2Saved * 100) / 100,
+      itemCount: entry.itemCount,
+    }))
+    .sort((a, b) => b.co2Saved - a.co2Saved);
 }
 
 /**
- * Get global carbon emissions saved statistics
- * 
- * Data Flow:
- * 1. Aggregate all ImpactStats documents
- * 2. Sum total CO2 saved
- * 3. Calculate averages
- * 4. Calculate equivalent metrics (cars removed, trees planted)
- * 
- * @returns {Promise<Object>} Global carbon savings statistics
- * 
- * Example Return:
- * {
- *   totalCO2SavedKg: 1250.50,
- *   totalUsers: 150,
- *   avgCO2PerUser: 8.34,
- *   maxCO2PerUser: 45.20,
- *   equivalentCarsRemoved: 271, // Based on 4.6 tons CO2/year per car
- *   equivalentTreesPlanted: 57  // Based on 21.77 kg CO2/year per tree
- * }
- * 
- * TODO: Implement function
+ * Global carbon savings statistics.
+ * @returns {Promise<{totalCO2SavedKg: number, totalUsers: number, avgCO2PerUser: number, maxCO2PerUser: number, equivalentCarsRemoved: number, equivalentTreesPlanted: number}>}
  */
 async function getGlobalCarbonStats() {
-  // TODO:
-  // 1. Use MongoDB aggregation on ImpactStats
-  // 2. Sum co2SavedKg, count users, calculate avg and max
-  // 3. Calculate equivalent metrics:
-  //    - equivalentCarsRemoved = totalCO2SavedKg / 4600 (convert to tons, divide by 4.6)
-  //    - equivalentTreesPlanted = totalCO2SavedKg / 21.77
-  // 4. Return formatted stats object
-  throw new Error("TODO: Implement getGlobalCarbonStats");
+  const [stats] = await ImpactStats.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalCO2SavedKg: { $sum: "$co2SavedKg" },
+        totalUsers: { $sum: 1 },
+        avgCO2PerUser: { $avg: "$co2SavedKg" },
+        maxCO2PerUser: { $max: "$co2SavedKg" },
+      },
+    },
+  ]);
+
+  const totalCO2SavedKg = stats?.totalCO2SavedKg || 0;
+  const totalUsers = stats?.totalUsers || 0;
+  const avgCO2PerUser = stats?.avgCO2PerUser || 0;
+  const maxCO2PerUser = stats?.maxCO2PerUser || 0;
+
+  return {
+    totalCO2SavedKg: Math.round(totalCO2SavedKg * 100) / 100,
+    totalUsers,
+    avgCO2PerUser: Math.round(avgCO2PerUser * 100) / 100,
+    maxCO2PerUser: Math.round(maxCO2PerUser * 100) / 100,
+    equivalentCarsRemoved:
+      Math.round((totalCO2SavedKg / CAR_CO2_PER_YEAR_KG) * 100) / 100,
+    equivalentTreesPlanted:
+      Math.round((totalCO2SavedKg / TREE_CO2_PER_YEAR_KG) * 100) / 100,
+  };
 }
 
 /**
- * Calculate potential carbon savings from items
- * 
- * Data Flow:
- * 1. Receive array of FoodItems
- * 2. For each item, calculate potential CO2 saved if consumed
- * 3. Sum total potential CO2
- * 4. Calculate equivalent metrics
- * 
- * @param {Array} foodItems - Array of FoodItem documents
- * @returns {Object} Potential carbon savings
- * 
- * Example Return:
- * {
- *   potentialCO2SavedKg: 25.50,
- *   itemCount: 15,
- *   equivalentCarsRemoved: 0.0055,
- *   equivalentTreesPlanted: 1.17
- * }
- * 
- * TODO: Implement function
+ * Potential carbon savings from a collection of food items.
+ * @param {Array<Object>} foodItems
+ * @returns {{potentialCO2SavedKg: number, itemCount: number, equivalentCarsRemoved: number, equivalentTreesPlanted: number}}
  */
 function calculatePotentialCarbonSavings(foodItems) {
-  // TODO:
-  // 1. Loop through foodItems
-  // 2. For each, convert quantity to kg using convertToKg
-  // 3. Get CO2 factor from IMPACT_CONSTANTS based on category
-  // 4. Calculate potential CO2 = co2PerKg * weightInKg
-  // 5. Sum all potential CO2
-  // 6. Calculate equivalent metrics
-  // 7. Return object
-  throw new Error("TODO: Implement calculatePotentialCarbonSavings");
+  if (!Array.isArray(foodItems) || foodItems.length === 0) {
+    return {
+      potentialCO2SavedKg: 0,
+      itemCount: 0,
+      equivalentCarsRemoved: 0,
+      equivalentTreesPlanted: 0,
+    };
+  }
+
+  let totalCO2 = 0;
+
+  foodItems.forEach((item) => {
+    if (!item) {
+      return;
+    }
+    const category = item.category || "other";
+    const weightInKg = convertToKg(item.quantity, item.unit);
+    const co2PerKg = IMPACT_CONSTANTS[category] || IMPACT_CONSTANTS.other;
+    totalCO2 += co2PerKg * weightInKg;
+  });
+
+  return {
+    potentialCO2SavedKg: Math.round(totalCO2 * 100) / 100,
+    itemCount: foodItems.length,
+    equivalentCarsRemoved:
+      Math.round((totalCO2 / CAR_CO2_PER_YEAR_KG) * 100) / 100,
+    equivalentTreesPlanted:
+      Math.round((totalCO2 / TREE_CO2_PER_YEAR_KG) * 100) / 100,
+  };
 }
 
 /**
- * Convert quantity to kilograms
- * Helper function for unit conversion
- * 
- * @param {Number} quantity - Amount of food
- * @param {String} unit - Unit of measurement
- * @returns {Number} Weight in kilograms
- * 
- * TODO: Implement conversion logic (can be shared from impact-util if needed)
+ * Convert a quantity + unit to kilograms.
+ * @param {number} quantity
+ * @param {string} unit
+ * @returns {number}
  */
 function convertToKg(quantity, unit) {
-  // TODO: Implement unit conversion
-  // Conversion factors: g=0.001, lb=0.453592, oz=0.0283495, L≈1, mL=0.001, etc.
-  throw new Error("TODO: Implement convertToKg");
+  const numericQuantity = Number(quantity);
+  if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+    return 0;
+  }
+
+  const unitKey =
+    typeof unit === "string" && unit.length > 0 ? unit.toLowerCase() : "";
+
+  const conversions = {
+    kg: 1,
+    g: 0.001,
+    lb: 0.453592,
+    lbs: 0.453592,
+    oz: 0.0283495,
+    l: 1,
+    liter: 1,
+    liters: 1,
+    ml: 0.001,
+    milliliter: 0.001,
+    milliliters: 0.001,
+    cup: 0.236,
+    cups: 0.236,
+    item: 0.5,
+    items: 0.5,
+    piece: 0.5,
+    pieces: 0.5,
+    pack: 0.75,
+    packs: 0.75,
+    unit: 0.5,
+    units: 0.5,
+  };
+
+  const conversionFactor = conversions[unitKey] ?? 0.5;
+  return numericQuantity * conversionFactor;
 }
 
 module.exports = {
@@ -187,4 +258,3 @@ module.exports = {
   calculatePotentialCarbonSavings,
   convertToKg,
 };
-
