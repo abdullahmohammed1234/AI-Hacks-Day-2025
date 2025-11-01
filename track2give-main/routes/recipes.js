@@ -2,7 +2,25 @@ const express = require("express");
 const router = express.Router();
 const FoodItem = require("../models/foodItem");
 const { generateRecipesWithGemini } = require("../utilities/gemini-util");
-require("dotenv").config();
+
+/**
+ * Recipe Generation Routes Module
+ * 
+ * This module handles recipe generation with two types:
+ * 1. Recipes using only existing groceries
+ * 2. Recipes requiring additional shopping
+ * 
+ * Team Member Assignment: [ASSIGN TEAM MEMBER NAME]
+ * 
+ * Routes:
+ * - GET /recipes - Renders the recipes page
+ * - POST /api/generate-recipe - Generate recipes (legacy - may need update)
+ * - POST /api/generate-recipe/existing - Generate recipes with existing groceries only
+ * - POST /api/generate-recipe/shopping - Generate recipes requiring shopping
+ * - POST /api/generate-recipe/both - Generate both recipe types
+ * 
+ * @module routes/recipes
+ */
 
 // Middleware to protect routes
 function requireAuth(req, res, next) {
@@ -12,7 +30,47 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// POST /api/generate-recipe - Generate recipe using Gemini AI
+// GET /recipes - Recipes page
+router.get("/recipes", requireAuth, async (req, res) => {
+  try {
+    // Get user's expiring food items
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // Next 7 days
+
+    const expiringItems = await FoodItem.find({
+      userId: req.session.user._id,
+      consumed: false,
+      expiryDate: { $lte: futureDate, $gte: now },
+    })
+      .sort({ expiryDate: 1 })
+      .limit(10);
+
+    // Get only non-expired food items for the user
+    const allFoodItems = await FoodItem.find({
+      userId: req.session.user._id,
+      consumed: false,
+      expiryDate: { $gte: now }, // Only items that haven't expired
+    }).sort({ expiryDate: 1 });
+
+    // Extract ingredients for recipe suggestions
+    const ingredients = allFoodItems.map((item) => item.name);
+
+    res.render("recipes", {
+      title: "Track2Give - Recipe Suggestions",
+      user: req.session.user,
+      currentPage: "recipes",
+      expiringItems,
+      allFoodItems,
+      ingredients,
+    });
+  } catch (error) {
+    console.error("Error loading recipes page:", error);
+    res.status(500).send("Error loading recipes");
+  }
+});
+
+// POST /api/generate-recipe - Generate recipe using Gemini AI (LEGACY)
+// TODO: Update this to support new two-type system or deprecate in favor of new endpoints
 router.post("/api/generate-recipe", requireAuth, async (req, res) => {
   try {
     const { ingredients, cuisine } = req.body;
@@ -60,54 +118,92 @@ router.post("/api/generate-recipe", requireAuth, async (req, res) => {
   }
 });
 
-// GET /recipes - Recipes page
-router.get("/recipes", requireAuth, async (req, res) => {
-  try {
-    // Get user's expiring food items
-    const now = new Date();
-    const futureDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // Next 7 days
-
-    const expiringItems = await FoodItem.find({
-      userId: req.session.user._id,
-      consumed: false,
-      expiryDate: { $lte: futureDate, $gte: now },
-    })
-      .sort({ expiryDate: 1 })
-      .limit(10);
-
-    // Get only non-expired food items for the user
-    const allFoodItems = await FoodItem.find({
-      userId: req.session.user._id,
-      consumed: false,
-      expiryDate: { $gte: now }, // Only items that haven't expired
-    }).sort({ expiryDate: 1 });
-
-    // Extract ingredients for recipe suggestions
-    const ingredients = allFoodItems.map((item) => item.name);
-
-    res.render("recipes", {
-      title: "Track2Give - Recipe Suggestions",
-      user: req.session.user,
-      currentPage: "recipes",
-      expiringItems,
-      allFoodItems,
-      ingredients,
-    });
-  } catch (error) {
-    console.error("Error loading recipes page:", error);
-    res.status(500).send("Error loading recipes");
-  }
+/**
+ * POST /api/generate-recipe/existing
+ * Generate recipes using only existing groceries (no shopping required)
+ * 
+ * Request Body:
+ * {
+ *   cuisine: string (optional)
+ * }
+ * 
+ * Response:
+ * {
+ *   success: boolean,
+ *   recipes: Array<Recipe>,
+ *   count: number
+ * }
+ * 
+ * TODO: Implement new endpoint
+ */
+router.post("/api/generate-recipe/existing", requireAuth, async (req, res) => {
+  // TODO:
+  // 1. Import generateRecipesWithExistingGroceries from recipe-util
+  // 2. Call with req.session.user._id and req.body.cuisine
+  // 3. Return JSON response
+  res.status(501).json({ success: false, error: "TODO: Implement" });
 });
 
-// GET /api/recipe-suggestions - Get recipe suggestions based on ingredients
+/**
+ * POST /api/generate-recipe/shopping
+ * Generate recipes requiring additional shopping
+ * 
+ * Request Body:
+ * {
+ *   cuisine: string (optional)
+ * }
+ * 
+ * Response:
+ * {
+ *   success: boolean,
+ *   recipes: Array<Recipe>, // Each with requiredShoppingItems array
+ *   count: number
+ * }
+ * 
+ * TODO: Implement new endpoint
+ */
+router.post("/api/generate-recipe/shopping", requireAuth, async (req, res) => {
+  // TODO:
+  // 1. Import generateRecipesWithShopping from recipe-util
+  // 2. Call with req.session.user._id and req.body.cuisine
+  // 3. Return JSON response
+  res.status(501).json({ success: false, error: "TODO: Implement" });
+});
+
+/**
+ * POST /api/generate-recipe/both
+ * Generate both recipe types simultaneously
+ * 
+ * Request Body:
+ * {
+ *   cuisine: string (optional)
+ * }
+ * 
+ * Response:
+ * {
+ *   success: boolean,
+ *   existingGroceries: { recipes: Array, count: number },
+ *   requiresShopping: { recipes: Array, count: number }
+ * }
+ * 
+ * TODO: Implement new endpoint
+ */
+router.post("/api/generate-recipe/both", requireAuth, async (req, res) => {
+  // TODO:
+  // 1. Import generateBothRecipeTypes from recipe-util
+  // 2. Call with req.session.user._id and req.body.cuisine
+  // 3. Return JSON response
+  res.status(501).json({ success: false, error: "TODO: Implement" });
+});
+
+// GET /api/recipe-suggestions - Get recipe suggestions based on ingredients (LEGACY)
 router.get("/api/recipe-suggestions", requireAuth, async (req, res) => {
   try {
     const ingredients = req.query.ingredients
       ? req.query.ingredients.split(",")
       : [];
 
-    // TODO: Call external recipe API (Spoonacular, Edamam, etc.)
-    // For now, return mock data
+    // TODO: Call external recipe API (Spoonacular, Edamam, etc.) or use new utilities
     const mockRecipes = [
       {
         id: 1,
@@ -116,14 +212,6 @@ router.get("/api/recipe-suggestions", requireAuth, async (req, res) => {
         usedIngredients: ingredients.slice(0, 3),
         missedIngredients: ["soy sauce", "garlic"],
         readyInMinutes: 20,
-      },
-      {
-        id: 2,
-        title: "Simple Fruit Salad",
-        image: "https://via.placeholder.com/300x200",
-        usedIngredients: ingredients.slice(0, 2),
-        missedIngredients: ["honey", "lemon"],
-        readyInMinutes: 10,
       },
     ];
 
@@ -137,11 +225,10 @@ router.get("/api/recipe-suggestions", requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/recipe/:id - Get recipe details
+// GET /api/recipe/:id - Get recipe details (LEGACY)
 router.get("/api/recipe/:id", requireAuth, async (req, res) => {
   try {
-    // TODO: Call external recipe API for details
-    // For now, return mock data
+    // TODO: Call external recipe API for details or use new utilities
     const mockRecipeDetail = {
       id: req.params.id,
       title: "Quick Vegetable Stir Fry",

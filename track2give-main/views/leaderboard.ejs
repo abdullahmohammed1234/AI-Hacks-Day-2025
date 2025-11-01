@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+
+<!--
+  Leaderboard View
+  Team Member Assignment: [ASSIGN TEAM MEMBER NAME]
+  
+  This view displays:
+  - Global impact statistics
+  - Top donors sorted by items shared or CO2 saved
+  - Current user's rank and percentile
+  - Sort options (donations vs carbon)
+  
+  TODO: Implement the view with proper styling
+-->
+
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-6">🏆 Leaderboard</h1>
+    
+    <!-- Global Stats Section -->
+    <!-- TODO: Display globalStats object passed from route -->
+    <!-- TODO: Show totalItemsShared, totalCO2SavedKg, totalUsers, totalMoneySavedDollars -->
+    
+    <!-- Sort Options -->
+    <!-- TODO: Add buttons to switch between "donations" and "carbon" sorting -->
+    <!-- TODO: Highlight active sort option -->
+    
+    <!-- User's Rank Card -->
+    <!-- TODO: If userRank.rank exists, display rank, totalDonors, percentile -->
+    <!-- TODO: Show user's itemsShared and co2SavedKg -->
+    <!-- TODO: If no rank, show message encouraging donations -->
+    
+    <!-- Top Donors List -->
+    <!-- TODO: Display topDonors array in a table -->
+    <!-- TODO: Show rank (with 🥇🥈🥉 for top 3), username, stats -->
+    <!-- TODO: Highlight current user's row if present -->
+    <!-- TODO: Show empty state if no donors -->
+    
+</div>
+
+<%- include('partials/footer') %>
+
+

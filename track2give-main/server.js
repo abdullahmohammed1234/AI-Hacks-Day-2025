@@ -31,6 +31,11 @@ const settingsRoutes = require("./routes/settings");
 const donateRoutes = require("./routes/donate");
 const scanRoutes = require("./routes/scan");
 
+// Import new modular routes (Team Collaboration Modules)
+const leaderboardRoutes = require("./routes/leaderboard");
+const carbonRoutes = require("./routes/carbon");
+const shoppingRoutes = require("./routes/shopping");
+
 const app = express();
 const port = 3000;
 
@@ -76,6 +81,11 @@ app.use("/community", communityRoutes);
 app.use(settingsRoutes);
 app.use(donateRoutes);
 app.use(scanRoutes);
+
+// Use new modular routes (Team Collaboration Modules)
+app.use(leaderboardRoutes);
+app.use(carbonRoutes);
+app.use(shoppingRoutes);
 
 // Homepage/Landing page
 app.get("/", async (req, res) => {

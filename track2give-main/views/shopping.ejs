@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+
+<!--
+  Shopping List/Cart View
+  Team Member Assignment: [ASSIGN TEAM MEMBER NAME]
+  
+  This view displays:
+  - User's shopping list with unchecked and checked items
+  - Ability to add manual items
+  - Check off items when purchased
+  - Add items from recipe suggestions
+  - Shopping list statistics (total cost, item count)
+  - Priority indicators (high, medium, low)
+  - Integration with recipe module to add missing ingredients
+  
+  TODO: Implement the view with proper styling and functionality
+-->
+
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-6">🛒 Shopping List</h1>
+    
+    <!-- Shopping List Statistics -->
+    <!-- TODO: Display stats object (totalItems, uncheckedItems, estimatedTotalCost) -->
+    
+    <!-- Add Item Form -->
+    <!-- TODO: Form to manually add items -->
+    <!-- TODO: Fields: name, quantity, unit, category, priority, estimatedPrice, notes -->
+    <!-- TODO: Submit to POST /api/shopping/add -->
+    
+    <!-- Unchecked Items Section -->
+    <!-- TODO: Display unchecked shopping items -->
+    <!-- TODO: Show priority badges (high/medium/low) -->
+    <!-- TODO: Checkbox to check off items -->
+    <!-- TODO: Button to remove items -->
+    <!-- TODO: Option to add to inventory when checking off -->
+    
+    <!-- Checked Items Section (collapsible) -->
+    <!-- TODO: Display checked items (can be hidden by default) -->
+    <!-- TODO: Show checked date -->
+    <!-- TODO: Button to clear all checked items -->
+    
+    <!-- Add from Recipe Section -->
+    <!-- TODO: Display recipes that require shopping -->
+    <!-- TODO: Button to "Add to Shopping List" for each recipe -->
+    <!-- TODO: Integration with recipe generation module -->
+    
+    <!-- Empty State -->
+    <!-- TODO: Show message when shopping list is empty -->
+    <!-- TODO: Suggest adding items from recipes or manually -->
+    
+</div>
+
+<%- include('partials/footer') %>
+
