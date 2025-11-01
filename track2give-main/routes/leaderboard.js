@@ -1,5 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const {
+  getTopDonors,
+  getTopCarbonSavers,
+  getGlobalDonationStats,
+  getUserRank,
+} = require("../utilities/leaderboard-util");
 
 /**
  * Leaderboard Routes Module
@@ -36,11 +42,34 @@ function requireAuth(req, res, next) {
  * TODO: Implement route handler
  */
 router.get("/leaderboard", requireAuth, async (req, res) => {
-  // TODO: Get top donors based on sort criteria
-  // TODO: Get global statistics using leaderboard-util
-  // TODO: Get current user's rank
-  // TODO: Render leaderboard.ejs with data
-  res.status(501).send("Leaderboard page - TODO: Implement");
+  const sort = req.query.sort === "carbon" ? "carbon" : "donations";
+  const limit = Number.isFinite(Number(req.query.limit))
+    ? Math.max(1, Math.min(50, parseInt(req.query.limit, 10)))
+    : 10;
+
+  try {
+    const [globalStats, userRank, leaderboardEntries] = await Promise.all([
+      getGlobalDonationStats(),
+      getUserRank(req.session.user._id),
+      sort === "carbon"
+        ? getTopCarbonSavers(limit)
+        : getTopDonors(limit),
+    ]);
+
+    return res.render("leaderboard", {
+      sort,
+      limit,
+      globalStats,
+      userRank,
+      leaderboardEntries,
+      currentUserId: String(req.session.user._id),
+    });
+  } catch (error) {
+    console.error("Failed to render leaderboard:", error);
+    return res
+      .status(500)
+      .send("We ran into a problem loading the leaderboard.");
+  }
 });
 
 /**
@@ -66,9 +95,19 @@ router.get("/leaderboard", requireAuth, async (req, res) => {
  * TODO: Implement API endpoint
  */
 router.get("/api/leaderboard/top-donors", requireAuth, async (req, res) => {
-  // TODO: Call getTopDonors from leaderboard-util
-  // TODO: Return JSON response
-  res.status(501).json({ success: false, error: "TODO: Implement" });
+  const limit = Number.isFinite(Number(req.query.limit))
+    ? Math.max(1, Math.min(50, parseInt(req.query.limit, 10)))
+    : 10;
+
+  try {
+    const donors = await getTopDonors(limit);
+    res.json({ success: true, data: donors });
+  } catch (error) {
+    console.error("Failed to fetch top donors:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Unable to load top donors right now." });
+  }
 });
 
 /**
@@ -93,9 +132,20 @@ router.get("/api/leaderboard/top-donors", requireAuth, async (req, res) => {
  * TODO: Implement API endpoint
  */
 router.get("/api/leaderboard/top-carbon-savers", requireAuth, async (req, res) => {
-  // TODO: Call getTopCarbonSavers from leaderboard-util
-  // TODO: Return JSON response
-  res.status(501).json({ success: false, error: "TODO: Implement" });
+  const limit = Number.isFinite(Number(req.query.limit))
+    ? Math.max(1, Math.min(50, parseInt(req.query.limit, 10)))
+    : 10;
+
+  try {
+    const savers = await getTopCarbonSavers(limit);
+    res.json({ success: true, data: savers });
+  } catch (error) {
+    console.error("Failed to fetch top carbon savers:", error);
+    res.status(500).json({
+      success: false,
+      error: "Unable to load carbon savers right now.",
+    });
+  }
 });
 
 /**
@@ -117,9 +167,15 @@ router.get("/api/leaderboard/top-carbon-savers", requireAuth, async (req, res) =
  * TODO: Implement API endpoint
  */
 router.get("/api/leaderboard/stats", requireAuth, async (req, res) => {
-  // TODO: Call getGlobalDonationStats from leaderboard-util
-  // TODO: Return JSON response
-  res.status(501).json({ success: false, error: "TODO: Implement" });
+  try {
+    const stats = await getGlobalDonationStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error("Failed to fetch leaderboard stats:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Unable to load stats right now." });
+  }
 });
 
 /**
@@ -140,9 +196,15 @@ router.get("/api/leaderboard/stats", requireAuth, async (req, res) => {
  * TODO: Implement API endpoint
  */
 router.get("/api/leaderboard/user-rank", requireAuth, async (req, res) => {
-  // TODO: Call getUserRank from leaderboard-util with req.session.user._id
-  // TODO: Return JSON response
-  res.status(501).json({ success: false, error: "TODO: Implement" });
+  try {
+    const rank = await getUserRank(req.session.user._id);
+    res.json({ success: true, data: rank });
+  } catch (error) {
+    console.error("Failed to fetch user rank:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Unable to load rank right now." });
+  }
 });
 
 module.exports = router;

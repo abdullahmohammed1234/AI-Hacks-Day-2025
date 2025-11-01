@@ -48,14 +48,61 @@ const SharedItem = require("../models/sharedItem");
  * TODO: Implement function
  */
 async function getTopDonors(limit = 10) {
-  // TODO: Use MongoDB aggregation to:
-  // 1. Match ImpactStats where itemsShared > 0
-  // 2. Sort by itemsShared descending
-  // 3. Limit to limit
-  // 4. Lookup User collection to get username and profilePicture
-  // 5. Project and calculate rank
-  // 6. Return formatted array
-  throw new Error("TODO: Implement getTopDonors");
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
+
+  const topDonorDocs = await ImpactStats.aggregate([
+    {
+      $match: {
+        itemsShared: { $gt: 0 },
+      },
+    },
+    {
+      $sort: {
+        itemsShared: -1,
+        co2SavedKg: -1,
+        itemsSaved: -1,
+        userId: 1,
+      },
+    },
+    { $limit: safeLimit },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $addFields: {
+        user: { $first: "$user" },
+      },
+    },
+    {
+      $project: {
+        userId: 1,
+        itemsShared: 1,
+        itemsSaved: 1,
+        co2SavedKg: 1,
+        waterSavedLiters: 1,
+        moneySavedDollars: 1,
+        username: { $ifNull: ["$user.username", "Anonymous Donor"] },
+        profilePicture: { $ifNull: ["$user.profilePicture", ""] },
+      },
+    },
+  ]);
+
+  return topDonorDocs.map((doc, index) => ({
+    userId: doc.userId,
+    username: doc.username,
+    profilePicture: doc.profilePicture,
+    itemsShared: doc.itemsShared,
+    itemsSaved: doc.itemsSaved,
+    co2SavedKg: doc.co2SavedKg,
+    waterSavedLiters: doc.waterSavedLiters,
+    moneySavedDollars: doc.moneySavedDollars,
+    rank: index + 1,
+  }));
 }
 
 /**
@@ -74,8 +121,61 @@ async function getTopDonors(limit = 10) {
  * TODO: Implement function
  */
 async function getTopCarbonSavers(limit = 10) {
-  // TODO: Similar to getTopDonors but sort by co2SavedKg
-  throw new Error("TODO: Implement getTopCarbonSavers");
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
+
+  const topSaverDocs = await ImpactStats.aggregate([
+    {
+      $match: {
+        co2SavedKg: { $gt: 0 },
+      },
+    },
+    {
+      $sort: {
+        co2SavedKg: -1,
+        itemsShared: -1,
+        itemsSaved: -1,
+        userId: 1,
+      },
+    },
+    { $limit: safeLimit },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $addFields: {
+        user: { $first: "$user" },
+      },
+    },
+    {
+      $project: {
+        userId: 1,
+        itemsShared: 1,
+        itemsSaved: 1,
+        co2SavedKg: 1,
+        waterSavedLiters: 1,
+        moneySavedDollars: 1,
+        username: { $ifNull: ["$user.username", "Anonymous Donor"] },
+        profilePicture: { $ifNull: ["$user.profilePicture", ""] },
+      },
+    },
+  ]);
+
+  return topSaverDocs.map((doc, index) => ({
+    userId: doc.userId,
+    username: doc.username,
+    profilePicture: doc.profilePicture,
+    itemsShared: doc.itemsShared,
+    itemsSaved: doc.itemsSaved,
+    co2SavedKg: doc.co2SavedKg,
+    waterSavedLiters: doc.waterSavedLiters,
+    moneySavedDollars: doc.moneySavedDollars,
+    rank: index + 1,
+  }));
 }
 
 /**
@@ -105,12 +205,51 @@ async function getTopCarbonSavers(limit = 10) {
  * TODO: Implement function
  */
 async function getGlobalDonationStats() {
-  // TODO: Use MongoDB aggregation to:
-  // 1. Group all ImpactStats and sum totals
-  // 2. Calculate averages
-  // 3. Count SharedItems with status "available"
-  // 4. Return formatted stats object
-  throw new Error("TODO: Implement getGlobalDonationStats");
+  const [totals] = await ImpactStats.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalUsers: { $sum: 1 },
+        totalItemsSaved: { $sum: "$itemsSaved" },
+        totalItemsShared: { $sum: "$itemsShared" },
+        totalCO2SavedKg: { $sum: "$co2SavedKg" },
+        totalWaterSavedLiters: { $sum: "$waterSavedLiters" },
+        totalMoneySavedDollars: { $sum: "$moneySavedDollars" },
+        avgItemsSharedPerUser: { $avg: "$itemsShared" },
+        avgCO2SavedPerUser: { $avg: "$co2SavedKg" },
+      },
+    },
+  ]);
+
+  const totalAvailableItems = await SharedItem.countDocuments({
+    status: "available",
+  });
+
+  if (!totals) {
+    return {
+      totalUsers: 0,
+      totalItemsSaved: 0,
+      totalItemsShared: 0,
+      totalCO2SavedKg: 0,
+      totalWaterSavedLiters: 0,
+      totalMoneySavedDollars: 0,
+      avgItemsSharedPerUser: 0,
+      avgCO2SavedPerUser: 0,
+      totalAvailableItems,
+    };
+  }
+
+  return {
+    totalUsers: totals.totalUsers,
+    totalItemsSaved: totals.totalItemsSaved,
+    totalItemsShared: totals.totalItemsShared,
+    totalCO2SavedKg: totals.totalCO2SavedKg,
+    totalWaterSavedLiters: totals.totalWaterSavedLiters,
+    totalMoneySavedDollars: totals.totalMoneySavedDollars,
+    avgItemsSharedPerUser: totals.avgItemsSharedPerUser || 0,
+    avgCO2SavedPerUser: totals.avgCO2SavedPerUser || 0,
+    totalAvailableItems,
+  };
 }
 
 /**
@@ -137,13 +276,54 @@ async function getGlobalDonationStats() {
  * TODO: Implement function
  */
 async function getUserRank(userId) {
-  // TODO: 
-  // 1. Find user's ImpactStats
-  // 2. Count ImpactStats with itemsShared > user's itemsShared
-  // 3. Count total ImpactStats with itemsShared > 0
-  // 4. Calculate rank and percentile
-  // 5. Return rank object
-  throw new Error("TODO: Implement getUserRank");
+  if (!userId) {
+    return {
+      rank: null,
+      totalDonors: 0,
+      percentile: null,
+      itemsShared: 0,
+      co2SavedKg: 0,
+    };
+  }
+
+  const userStats = await ImpactStats.findOne({ userId }).lean();
+  const totalDonors = await ImpactStats.countDocuments({
+    itemsShared: { $gt: 0 },
+  });
+
+  if (!userStats || userStats.itemsShared <= 0) {
+    return {
+      rank: null,
+      totalDonors,
+      percentile: null,
+      itemsShared: userStats ? userStats.itemsShared : 0,
+      co2SavedKg: userStats ? userStats.co2SavedKg : 0,
+    };
+  }
+
+  const usersAhead = await ImpactStats.countDocuments({
+    $or: [
+      { itemsShared: { $gt: userStats.itemsShared } },
+      {
+        itemsShared: userStats.itemsShared,
+        co2SavedKg: { $gt: userStats.co2SavedKg },
+      },
+    ],
+  });
+
+  const rank = usersAhead + 1;
+  const percentile =
+    totalDonors > 0
+      ? Math.round(((totalDonors - rank) / totalDonors) * 100)
+      : null;
+
+  return {
+    rank,
+    totalDonors,
+    percentile,
+    itemsShared: userStats.itemsShared,
+    co2SavedKg: userStats.co2SavedKg,
+  };
 }
 
 module.exports = {

@@ -1,42 +1,181 @@
 <%- include('partials/header') %>
 
-<!--
-  Leaderboard View
-  Team Member Assignment: [ASSIGN TEAM MEMBER NAME]
-  
-  This view displays:
-  - Global impact statistics
-  - Top donors sorted by items shared or CO2 saved
-  - Current user's rank and percentile
-  - Sort options (donations vs carbon)
-  
-  TODO: Implement the view with proper styling
--->
+<%
+  const formatNumber = (value, digits = 0) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+      return "0";
+    }
+    const options = { minimumFractionDigits: digits, maximumFractionDigits: digits };
+    return Number(value).toLocaleString("en-US", options);
+  };
+
+  const formatPercent = (value) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+      return "N/A";
+    }
+    return `${value}%`;
+  };
+
+  const getRankLabel = (rank) => {
+    if (rank === 1) return "1st";
+    if (rank === 2) return "2nd";
+    if (rank === 3) return "3rd";
+    return `#${rank}`;
+  };
+
+  const sectionTitle = sort === "carbon" ? "Top Carbon Savers" : "Top Donors";
+  const percentileDisplay =
+    userRank && userRank.percentile !== null && userRank.percentile !== undefined
+      ? formatPercent(100 - userRank.percentile)
+      : "N/A";
+%>
 
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold mb-6">🏆 Leaderboard</h1>
-    
-    <!-- Global Stats Section -->
-    <!-- TODO: Display globalStats object passed from route -->
-    <!-- TODO: Show totalItemsShared, totalCO2SavedKg, totalUsers, totalMoneySavedDollars -->
-    
-    <!-- Sort Options -->
-    <!-- TODO: Add buttons to switch between "donations" and "carbon" sorting -->
-    <!-- TODO: Highlight active sort option -->
-    
-    <!-- User's Rank Card -->
-    <!-- TODO: If userRank.rank exists, display rank, totalDonors, percentile -->
-    <!-- TODO: Show user's itemsShared and co2SavedKg -->
-    <!-- TODO: If no rank, show message encouraging donations -->
-    
-    <!-- Top Donors List -->
-    <!-- TODO: Display topDonors array in a table -->
-    <!-- TODO: Show rank (with 🥇🥈🥉 for top 3), username, stats -->
-    <!-- TODO: Highlight current user's row if present -->
-    <!-- TODO: Show empty state if no donors -->
-    
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Community Impact Leaderboard</h1>
+      <p class="text-gray-600 mt-2">Track how donations translate into meals saved and carbon reductions.</p>
+    </div>
+    <div class="inline-flex rounded-md shadow-sm" role="group">
+      <a
+        href="?sort=donations"
+        class="px-4 py-2 text-sm font-medium border border-gray-200 <%= sort === 'donations' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100' %> rounded-l-md"
+      >
+        Donations
+      </a>
+      <a
+        href="?sort=carbon"
+        class="px-4 py-2 text-sm font-medium border border-gray-200 <%= sort === 'carbon' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100' %> rounded-r-md"
+      >
+        Carbon
+      </a>
+    </div>
+  </div>
+
+  <!-- Global Stats -->
+  <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4 mb-10">
+    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Total Donations</p>
+      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(globalStats.totalItemsShared) %></p>
+      <p class="text-sm text-gray-500">Items shared across the community</p>
+    </div>
+    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Carbon Saved</p>
+      <p class="text-3xl font-bold text-emerald-600"><%= formatNumber(globalStats.totalCO2SavedKg, 2) %> kg</p>
+      <p class="text-sm text-gray-500">Food waste avoided through sharing</p>
+    </div>
+    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Active Donors</p>
+      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(globalStats.totalUsers) %></p>
+      <p class="text-sm text-gray-500">People contributing to the impact</p>
+    </div>
+    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Available Items</p>
+      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(globalStats.totalAvailableItems) %></p>
+      <p class="text-sm text-gray-500">Ready to be rescued right now</p>
+    </div>
+  </section>
+
+  <!-- User Rank -->
+  <section class="mb-10">
+    <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl shadow-md p-6 md:p-8">
+      <% if (userRank.rank) { %>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <p class="text-sm uppercase tracking-wide font-semibold mb-1">Your Impact</p>
+            <h2 class="text-3xl md:text-4xl font-extrabold mb-3">Ranked <%= userRank.rank %> out of <%= formatNumber(userRank.totalDonors) %> donors</h2>
+            <p class="text-sm md:text-base text-emerald-100">You are in the top <span class="font-semibold"><%= percentileDisplay %></span> of contributors. Keep sharing to climb even higher!</p>
+          </div>
+          <dl class="grid grid-cols-2 gap-4">
+            <div class="bg-white/15 rounded-lg p-4">
+              <dt class="text-xs uppercase tracking-wide text-emerald-100">Items Shared</dt>
+              <dd class="text-xl font-semibold"><%= formatNumber(userRank.itemsShared) %></dd>
+            </div>
+            <div class="bg-white/15 rounded-lg p-4">
+              <dt class="text-xs uppercase tracking-wide text-emerald-100">CO2 Saved</dt>
+              <dd class="text-xl font-semibold"><%= formatNumber(userRank.co2SavedKg, 2) %> kg</dd>
+            </div>
+          </dl>
+        </div>
+      <% } else { %>
+        <div class="md:flex md:items-center md:justify-between gap-6">
+          <div>
+            <h2 class="text-3xl md:text-4xl font-extrabold mb-3">Start your impact journey</h2>
+            <p class="text-sm md:text-base text-emerald-100">Share an item to join the leaderboard, inspire others, and save carbon together.</p>
+          </div>
+          <a
+            href="/share"
+            class="inline-flex items-center justify-center px-6 py-3 bg-white text-emerald-600 font-semibold rounded-lg shadow-sm hover:bg-emerald-50 transition"
+          >
+            Share Food Now
+          </a>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Leaderboard Table -->
+  <section class="bg-white shadow-sm border border-gray-100 rounded-xl overflow-hidden">
+    <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900"><%= sectionTitle %></h2>
+      <p class="text-sm text-gray-500 mt-1">Showing top <%= limit %> contributors sorted by <%= sort === "carbon" ? "carbon savings" : "items shared" %>.</p>
+      </div>
+    </header>
+
+    <% if (!leaderboardEntries || leaderboardEntries.length === 0) { %>
+      <div class="px-6 py-12 text-center text-gray-500">
+        <p>No impact data yet. Be the first to donate and see your name here!</p>
+      </div>
+    <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rank</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Shared</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Saved</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">CO2 Saved (kg)</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-100">
+            <% leaderboardEntries.forEach((entry) => { %>
+              <%
+                const entryUserId = String(entry.userId);
+                const isCurrentUser = currentUserId && entryUserId === String(currentUserId);
+              %>
+              <tr class="<%= isCurrentUser ? 'bg-emerald-50/70' : '' %>">
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">
+                  <%= getRankLabel(entry.rank) %>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  <div class="flex items-center gap-3">
+                    <% if (entry.profilePicture) { %>
+                      <img src="<%= entry.profilePicture %>" alt="<%= entry.username %> profile picture" class="h-9 w-9 rounded-full object-cover border border-emerald-100" />
+                    <% } else { %>
+                      <div class="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-semibold">
+                        <%= entry.username ? entry.username.charAt(0).toUpperCase() : "?" %>
+                      </div>
+                    <% } %>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900"><%= entry.username %></p>
+                      <% if (isCurrentUser) { %>
+                        <p class="text-xs text-emerald-600 font-semibold">That is you!</p>
+                      <% } %>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.itemsShared) %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.itemsSaved) %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.co2SavedKg, 2) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
 </div>
 
 <%- include('partials/footer') %>
-
-
