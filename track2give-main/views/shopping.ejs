@@ -1,54 +1,333 @@
-<%- include('partials/header') %>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <%- include('partials/header') %>
 
-<!--
-  Shopping List/Cart View
-  Team Member Assignment: [ASSIGN TEAM MEMBER NAME]
-  
-  This view displays:
-  - User's shopping list with unchecked and checked items
-  - Ability to add manual items
-  - Check off items when purchased
-  - Add items from recipe suggestions
-  - Shopping list statistics (total cost, item count)
-  - Priority indicators (high, medium, low)
-  - Integration with recipe module to add missing ingredients
-  
-  TODO: Implement the view with proper styling and functionality
--->
+    <main class="container main-content">
+      <!-- Page Header -->
+      <section class="page-header mb-2">
+        <h1>🛒 Shopping Cart</h1>
+        <p class="page-description">
+          Smart suggestions based on your purchase history and recipe preferences
+        </p>
+      </section>
 
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold mb-6">🛒 Shopping List</h1>
-    
-    <!-- Shopping List Statistics -->
-    <!-- TODO: Display stats object (totalItems, uncheckedItems, estimatedTotalCost) -->
-    
-    <!-- Add Item Form -->
-    <!-- TODO: Form to manually add items -->
-    <!-- TODO: Fields: name, quantity, unit, category, priority, estimatedPrice, notes -->
-    <!-- TODO: Submit to POST /api/shopping/add -->
-    
-    <!-- Unchecked Items Section -->
-    <!-- TODO: Display unchecked shopping items -->
-    <!-- TODO: Show priority badges (high/medium/low) -->
-    <!-- TODO: Checkbox to check off items -->
-    <!-- TODO: Button to remove items -->
-    <!-- TODO: Option to add to inventory when checking off -->
-    
-    <!-- Checked Items Section (collapsible) -->
-    <!-- TODO: Display checked items (can be hidden by default) -->
-    <!-- TODO: Show checked date -->
-    <!-- TODO: Button to clear all checked items -->
-    
-    <!-- Add from Recipe Section -->
-    <!-- TODO: Display recipes that require shopping -->
-    <!-- TODO: Button to "Add to Shopping List" for each recipe -->
-    <!-- TODO: Integration with recipe generation module -->
-    
-    <!-- Empty State -->
-    <!-- TODO: Show message when shopping list is empty -->
-    <!-- TODO: Suggest adding items from recipes or manually -->
-    
-</div>
+      <!-- Summary Stats -->
+      <% if (suggestions && suggestions.totalSuggestions > 0) { %>
+      <section class="stats-grid mb-3">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-primary">📊</div>
+          <div class="stat-content">
+            <h3 class="stat-value"><%= suggestions.totalSuggestions %></h3>
+            <p class="stat-label">Total Suggestions</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div
+            class="stat-icon"
+            style="
+              background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+              width: 50px;
+              height: 50px;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 1.5rem;
+              margin-bottom: 1rem;
+            "
+          >
+            📜
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-value"><%= suggestions.fromHistory ? suggestions.fromHistory.length : 0 %></h3>
+            <p class="stat-label">From History</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div
+            class="stat-icon"
+            style="
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+              width: 50px;
+              height: 50px;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 1.5rem;
+              margin-bottom: 1rem;
+            "
+          >
+            🍳
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-value"><%= suggestions.fromRecipes ? suggestions.fromRecipes.length : 0 %></h3>
+            <p class="stat-label">From Recipes</p>
+          </div>
+        </div>
+      </section>
+      <% } %>
 
-<%- include('partials/footer') %>
+      <div class="dashboard-grid">
+        <!-- Shopping Suggestions from History -->
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">📜 Based on Your Purchase History</h2>
+            <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem">
+              Items you regularly buy
+            </p>
+          </div>
 
+          <% if (suggestions && suggestions.fromHistory && suggestions.fromHistory.length > 0) { %>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem">
+            <% suggestions.fromHistory.forEach(function(item, index) { %>
+            <div
+              class="food-item-card"
+              style="
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+              "
+            >
+              <div style="display: flex; align-items: start; gap: 0.75rem">
+                <span style="font-size: 1.5rem; flex-shrink: 0">🛍️</span>
+                <div style="flex: 1; min-width: 0">
+                  <h4 style="margin: 0; color: #1f2937; font-weight: 600; word-wrap: break-word">
+                    <%= item.name %>
+                  </h4>
+                  <p
+                    style="
+                      margin: 0.25rem 0 0 0;
+                      color: #6b7280;
+                      font-size: 0.875rem;
+                    "
+                  >
+                    <%= item.category %> • <%= item.unit %>
+                    <% if (item.avgPrice > 0) { %>
+                    • $<%= item.avgPrice.toFixed(2) %> avg.
+                    <% } %>
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem">
+                <span class="badge badge-info" style="white-space: nowrap">
+                  <%= item.frequencyDescription || 'Recently purchased' %>
+                </span>
+                <button
+                  onclick="addToCart('<%= item.name %>', '<%= item.category %>', '<%= item.unit %>')"
+                  class="btn btn-primary btn-sm"
+                  style="flex-shrink: 0"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+          <% } else { %>
+          <div style="text-align: center; padding: 3rem; color: #9ca3af">
+            <p style="font-size: 3rem; margin: 0">📜</p>
+            <p style="margin: 1rem 0 0 0">
+              No purchase history yet. Start scanning receipts to get
+              personalized suggestions!
+            </p>
+            <a href="/scan" class="btn btn-primary mt-2">Scan Receipt</a>
+          </div>
+          <% } %>
+        </section>
+
+        <!-- Shopping Suggestions from Recipes -->
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">🍳 From Recipe Recommendations</h2>
+            <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem">
+              Suggested items based on recipes you might want to try
+            </p>
+          </div>
+
+          <% if (suggestions && suggestions.fromRecipes && suggestions.fromRecipes.length > 0) { %>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem">
+            <% suggestions.fromRecipes.forEach(function(item, index) { %>
+            <div
+              class="food-item-card"
+              style="
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+              "
+            >
+              <div style="display: flex; align-items: start; gap: 0.75rem">
+                <span style="font-size: 1.5rem; flex-shrink: 0">🥘</span>
+                <div style="flex: 1; min-width: 0">
+                  <h4 style="margin: 0; color: #1f2937; font-weight: 600; word-wrap: break-word">
+                    <%= item.name %>
+                  </h4>
+                  <p
+                    style="
+                      margin: 0.25rem 0 0 0;
+                      color: #6b7280;
+                      font-size: 0.875rem;
+                    "
+                  >
+                    <%= item.category || 'other' %> • <%= item.unit || 'item' %>
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem">
+                <span class="badge badge-warning" style="white-space: nowrap">Recipe</span>
+                <button
+                  onclick="addToCart('<%= item.name %>', '<%= item.category || 'other' %>', '<%= item.unit || 'item' %>')"
+                  class="btn btn-primary btn-sm"
+                  style="flex-shrink: 0"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+          <% } else { %>
+          <div style="text-align: center; padding: 3rem; color: #9ca3af">
+            <p style="font-size: 3rem; margin: 0">🍳</p>
+            <p style="margin: 1rem 0 0 0">
+              Recipe recommendations will appear here once you start exploring
+              recipes!
+            </p>
+            <a href="/recipes" class="btn btn-primary mt-2">Browse Recipes</a>
+          </div>
+          <% } %>
+        </section>
+      </div>
+
+      <!-- Empty State (if no suggestions) -->
+      <% if (!suggestions || suggestions.totalSuggestions === 0) { %>
+      <section
+        class="card"
+        style="
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          text-align: center;
+          padding: 3rem;
+        "
+      >
+        <div style="font-size: 4rem; margin-bottom: 1rem">🛒</div>
+        <h2 style="margin: 0 0 1rem 0; color: white">No suggestions yet</h2>
+        <p style="margin: 0 0 2rem 0; color: rgba(255, 255, 255, 0.9)">
+          Start scanning receipts or exploring recipes to get personalized
+          shopping suggestions!
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap">
+          <a
+            href="/scan"
+            class="btn"
+            style="background: white; color: #667eea; font-weight: 600"
+            >📷 Scan Receipt</a
+          >
+          <a
+            href="/recipes"
+            class="btn"
+            style="background: white; color: #667eea; font-weight: 600"
+            >🍳 Browse Recipes</a
+          >
+          <a
+            href="/add-food-item"
+            class="btn"
+            style="background: white; color: #667eea; font-weight: 600"
+            >➕ Add Item</a
+          >
+        </div>
+      </section>
+      <% } %>
+
+      <!-- Quick Actions -->
+      <section
+        style="
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          padding: 2rem;
+          border-radius: 12px;
+          margin: 2rem 0;
+          text-align: center;
+        "
+      >
+        <h2 style="margin: 0 0 1rem 0; color: white">Quick Actions</h2>
+        <div
+          style="
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+          "
+        >
+          <a
+            href="/scan"
+            class="btn"
+            style="background: white; color: #10b981; font-weight: 600"
+            >📷 Scan Receipt</a
+          >
+          <a
+            href="/recipes"
+            class="btn"
+            style="background: white; color: #10b981; font-weight: 600"
+            >🍳 Find Recipes</a
+          >
+          <a
+            href="/food-items"
+            class="btn"
+            style="background: white; color: #10b981; font-weight: 600"
+            >📦 My Food</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <script>
+      function addToCart(name, category, unit) {
+        // Create a simple alert for now - this would integrate with the shopping API
+        alert(
+          `"${name}" added to your shopping cart!\n\nThis will be implemented to save to your shopping list.`
+        );
+
+        // TODO: Make API call to POST /api/shopping/add
+        // fetch('/api/shopping/add', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify({
+        //         name: name,
+        //         category: category,
+        //         unit: unit,
+        //         quantity: 1,
+        //         source: 'suggestion'
+        //     })
+        // })
+        // .then(response => response.json())
+        // .then(data => {
+        //     if (data.success) {
+        //         alert('Item added to cart!');
+        //     }
+        // });
+      }
+    </script>
+  </body>
+</html>

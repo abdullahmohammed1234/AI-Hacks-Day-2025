@@ -30,16 +30,25 @@ function requireAuth(req, res, next) {
 
 /**
  * GET /shopping
- * Renders the shopping list page
- * 
- * TODO: Implement route handler
+ * Renders the shopping cart page with smart suggestions
  */
 router.get("/shopping", requireAuth, async (req, res) => {
-  // TODO:
-  // 1. Get shopping list using shopping-util
-  // 2. Get shopping list stats
-  // 3. Render shopping.ejs with data
-  res.status(501).send("Shopping list page - TODO: Implement");
+  try {
+    const { getShoppingSuggestions } = require("../utilities/shopping-util");
+    
+    // Get smart shopping suggestions (frequent items + recipe recommendations)
+    const suggestions = await getShoppingSuggestions(req.session.user._id);
+    
+    res.render("shopping", {
+      title: "Shopping Cart - Track2Give",
+      user: req.session.user,
+      currentPage: "shopping",
+      suggestions: suggestions,
+    });
+  } catch (error) {
+    console.error("Error loading shopping cart:", error);
+    res.status(500).send("Error loading shopping cart");
+  }
 });
 
 /**
