@@ -1,181 +1,221 @@
-<%- include('partials/header') %>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaderboard - Track2Give</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="icon" href="/images/favicon.ico" />
+  </head>
+  <body>
+    <%- include('partials/header') %>
 
-<%
-  const formatNumber = (value, digits = 0) => {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-      return "0";
-    }
-    const options = { minimumFractionDigits: digits, maximumFractionDigits: digits };
-    return Number(value).toLocaleString("en-US", options);
-  };
+    <%
+      const formatNumber = (value, digits = 0) => {
+        if (
+          value === null ||
+          value === undefined ||
+          Number.isNaN(Number(value))
+        ) {
+          return digits > 0 ? Number(0).toFixed(digits) : "0";
+        }
+        return Number(value).toLocaleString("en-US", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      };
 
-  const formatPercent = (value) => {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-      return "N/A";
-    }
-    return `${value}%`;
-  };
+      const formatPercent = (value) => {
+        if (
+          value === null ||
+          value === undefined ||
+          Number.isNaN(Number(value))
+        ) {
+          return "N/A";
+        }
+        return `${value}%`;
+      };
 
-  const getRankLabel = (rank) => {
-    if (rank === 1) return "1st";
-    if (rank === 2) return "2nd";
-    if (rank === 3) return "3rd";
-    return `#${rank}`;
-  };
+      const getRankLabel = (rank) => {
+        if (rank === 1) return "1st";
+        if (rank === 2) return "2nd";
+        if (rank === 3) return "3rd";
+        return `#${rank}`;
+      };
 
-  const sectionTitle = sort === "carbon" ? "Top Carbon Savers" : "Top Donors";
-  const percentileDisplay =
-    userRank && userRank.percentile !== null && userRank.percentile !== undefined
-      ? formatPercent(100 - userRank.percentile)
-      : "N/A";
-%>
+      const sectionTitle = sort === "carbon" ? "Top Carbon Savers" : "Top Donors";
+      const activeSortLabel = sort === "carbon" ? "carbon savings" : "items shared";
+      const percentileDisplay =
+        userRank && userRank.percentile !== null && userRank.percentile !== undefined
+          ? formatPercent(100 - userRank.percentile)
+          : "N/A";
+    %>
 
-<div class="container mx-auto px-4 py-8">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-    <div>
-      <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Community Impact Leaderboard</h1>
-      <p class="text-gray-600 mt-2">Track how donations translate into meals saved and carbon reductions.</p>
-    </div>
-    <div class="inline-flex rounded-md shadow-sm" role="group">
-      <a
-        href="?sort=donations"
-        class="px-4 py-2 text-sm font-medium border border-gray-200 <%= sort === 'donations' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100' %> rounded-l-md"
-      >
-        Donations
-      </a>
-      <a
-        href="?sort=carbon"
-        class="px-4 py-2 text-sm font-medium border border-gray-200 <%= sort === 'carbon' ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100' %> rounded-r-md"
-      >
-        Carbon
-      </a>
-    </div>
-  </div>
-
-  <!-- Global Stats -->
-  <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4 mb-10">
-    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
-      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Total Donations</p>
-      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(globalStats.totalItemsShared) %></p>
-      <p class="text-sm text-gray-500">Items shared across the community</p>
-    </div>
-    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
-      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Carbon Saved</p>
-      <p class="text-3xl font-bold text-emerald-600"><%= formatNumber(globalStats.totalCO2SavedKg, 2) %> kg</p>
-      <p class="text-sm text-gray-500">Food waste avoided through sharing</p>
-    </div>
-    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
-      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Active Donors</p>
-      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(globalStats.totalUsers) %></p>
-      <p class="text-sm text-gray-500">People contributing to the impact</p>
-    </div>
-    <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-100">
-      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Available Items</p>
-      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(globalStats.totalAvailableItems) %></p>
-      <p class="text-sm text-gray-500">Ready to be rescued right now</p>
-    </div>
-  </section>
-
-  <!-- User Rank -->
-  <section class="mb-10">
-    <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl shadow-md p-6 md:p-8">
-      <% if (userRank.rank) { %>
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <p class="text-sm uppercase tracking-wide font-semibold mb-1">Your Impact</p>
-            <h2 class="text-3xl md:text-4xl font-extrabold mb-3">Ranked <%= userRank.rank %> out of <%= formatNumber(userRank.totalDonors) %> donors</h2>
-            <p class="text-sm md:text-base text-emerald-100">You are in the top <span class="font-semibold"><%= percentileDisplay %></span> of contributors. Keep sharing to climb even higher!</p>
-          </div>
-          <dl class="grid grid-cols-2 gap-4">
-            <div class="bg-white/15 rounded-lg p-4">
-              <dt class="text-xs uppercase tracking-wide text-emerald-100">Items Shared</dt>
-              <dd class="text-xl font-semibold"><%= formatNumber(userRank.itemsShared) %></dd>
-            </div>
-            <div class="bg-white/15 rounded-lg p-4">
-              <dt class="text-xs uppercase tracking-wide text-emerald-100">CO2 Saved</dt>
-              <dd class="text-xl font-semibold"><%= formatNumber(userRank.co2SavedKg, 2) %> kg</dd>
-            </div>
-          </dl>
+    <main class="container leaderboard-page">
+      <section class="leaderboard-header">
+        <div class="leaderboard-heading">
+          <p class="section-eyebrow">Community Impact</p>
+          <h1 class="page-title">Leaderboard</h1>
+          <p class="page-subtitle">
+            Celebrate the donors and carbon savers powering Track2Give. Switch views to see who rescued the most meals
+            or prevented the most CO₂.
+          </p>
         </div>
-      <% } else { %>
-        <div class="md:flex md:items-center md:justify-between gap-6">
-          <div>
-            <h2 class="text-3xl md:text-4xl font-extrabold mb-3">Start your impact journey</h2>
-            <p class="text-sm md:text-base text-emerald-100">Share an item to join the leaderboard, inspire others, and save carbon together.</p>
-          </div>
+        <div class="leaderboard-toggle" role="tablist" aria-label="Leaderboard sort">
           <a
-            href="/share"
-            class="inline-flex items-center justify-center px-6 py-3 bg-white text-emerald-600 font-semibold rounded-lg shadow-sm hover:bg-emerald-50 transition"
+            href="?sort=donations"
+            class="leaderboard-toggle__option <%= sort === 'donations' ? 'is-active' : '' %>"
+            role="tab"
+            aria-selected="<%= sort === 'donations' %>"
           >
-            Share Food Now
+            Donations
+          </a>
+          <a
+            href="?sort=carbon"
+            class="leaderboard-toggle__option <%= sort === 'carbon' ? 'is-active' : '' %>"
+            role="tab"
+            aria-selected="<%= sort === 'carbon' %>"
+          >
+            Carbon
           </a>
         </div>
-      <% } %>
-    </div>
-  </section>
+      </section>
 
-  <!-- Leaderboard Table -->
-  <section class="bg-white shadow-sm border border-gray-100 rounded-xl overflow-hidden">
-    <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-semibold text-gray-900"><%= sectionTitle %></h2>
-      <p class="text-sm text-gray-500 mt-1">Showing top <%= limit %> contributors sorted by <%= sort === "carbon" ? "carbon savings" : "items shared" %>.</p>
-      </div>
-    </header>
+      <section class="leaderboard-summary">
+        <article class="leaderboard-summary-card">
+          <h3 class="leaderboard-summary-title">Total Donations</h3>
+          <p class="leaderboard-summary-value"><%= formatNumber(globalStats.totalItemsShared) %></p>
+          <p class="leaderboard-summary-caption">Items shared across the community</p>
+        </article>
+        <article class="leaderboard-summary-card">
+          <h3 class="leaderboard-summary-title">Carbon Saved</h3>
+          <p class="leaderboard-summary-value highlight"><%= formatNumber(globalStats.totalCO2SavedKg, 2) %> kg</p>
+          <p class="leaderboard-summary-caption">Food waste avoided through sharing</p>
+        </article>
+        <article class="leaderboard-summary-card">
+          <h3 class="leaderboard-summary-title">Active Donors</h3>
+          <p class="leaderboard-summary-value"><%= formatNumber(globalStats.totalUsers) %></p>
+          <p class="leaderboard-summary-caption">People contributing to the impact</p>
+        </article>
+        <article class="leaderboard-summary-card">
+          <h3 class="leaderboard-summary-title">Available Items</h3>
+          <p class="leaderboard-summary-value"><%= formatNumber(globalStats.totalAvailableItems) %></p>
+          <p class="leaderboard-summary-caption">Ready to be rescued right now</p>
+        </article>
+      </section>
 
-    <% if (!leaderboardEntries || leaderboardEntries.length === 0) { %>
-      <div class="px-6 py-12 text-center text-gray-500">
-        <p>No impact data yet. Be the first to donate and see your name here!</p>
-      </div>
-    <% } else { %>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rank</th>
-              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
-              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Shared</th>
-              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Saved</th>
-              <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">CO2 Saved (kg)</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-100">
-            <% leaderboardEntries.forEach((entry) => { %>
-              <%
-                const entryUserId = String(entry.userId);
-                const isCurrentUser = currentUserId && entryUserId === String(currentUserId);
-              %>
-              <tr class="<%= isCurrentUser ? 'bg-emerald-50/70' : '' %>">
-                <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">
-                  <%= getRankLabel(entry.rank) %>
-                </td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  <div class="flex items-center gap-3">
-                    <% if (entry.profilePicture) { %>
-                      <img src="<%= entry.profilePicture %>" alt="<%= entry.username %> profile picture" class="h-9 w-9 rounded-full object-cover border border-emerald-100" />
-                    <% } else { %>
-                      <div class="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-semibold">
-                        <%= entry.username ? entry.username.charAt(0).toUpperCase() : "?" %>
+      <section class="leaderboard-user">
+        <% if (userRank.rank) { %>
+          <div class="leaderboard-user-card">
+            <div class="leaderboard-user-copy">
+              <p class="section-eyebrow light">Your Impact</p>
+              <h2 class="leaderboard-user-title">
+                Ranked <span><%= userRank.rank %></span> of <%= formatNumber(userRank.totalDonors) %> donors
+              </h2>
+              <p class="leaderboard-user-subtitle">
+                You're performing better than <strong><%= percentileDisplay %></strong> of the community. Keep sharing to climb!
+              </p>
+            </div>
+            <div class="leaderboard-user-stats">
+              <div class="leaderboard-user-stat">
+                <span class="label">Items Shared</span>
+                <span class="value"><%= formatNumber(userRank.itemsShared) %></span>
+              </div>
+              <div class="leaderboard-user-stat">
+                <span class="label">CO₂ Saved</span>
+                <span class="value"><%= formatNumber(userRank.co2SavedKg, 2) %> kg</span>
+              </div>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="leaderboard-user-card is-empty">
+            <div class="leaderboard-user-copy">
+              <p class="section-eyebrow">Kickoff Impact</p>
+              <h2 class="leaderboard-user-title">Start your impact journey</h2>
+              <p class="leaderboard-user-subtitle">
+                Share your first item to appear on the leaderboard, inspire neighbours, and keep emissions out of the atmosphere.
+              </p>
+            </div>
+            <div class="leaderboard-user-actions">
+              <a href="/donate" class="btn btn-primary btn-lg">Share Food Now</a>
+              <a href="/leaderboard?sort=carbon" class="btn btn-secondary btn-lg">View Carbon Rankings</a>
+            </div>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="card leaderboard-table">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title"><%= sectionTitle %></h2>
+            <p class="card-subtitle">
+              Showing top <%= limit %> contributors sorted by <%= activeSortLabel %>.
+            </p>
+          </div>
+        </div>
+
+        <% if (!leaderboardEntries || leaderboardEntries.length === 0) { %>
+          <div class="leaderboard-empty">
+            <p>No impact data yet. Be the first to donate and see your name here!</p>
+          </div>
+        <% } else { %>
+          <div class="leaderboard-table-wrapper">
+            <table class="impact-table">
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Member</th>
+                  <th scope="col">Items Shared</th>
+                  <th scope="col">Items Saved</th>
+                  <th scope="col">CO₂ Saved (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% leaderboardEntries.forEach((entry) => { %>
+                  <%
+                    const entryUserId = String(entry.userId);
+                    const isCurrentUser = currentUserId && entryUserId === String(currentUserId);
+                    const rankClass = entry.rank <= 3 ? `is-top-${entry.rank}` : "";
+                  %>
+                  <tr class="<%= isCurrentUser ? 'is-current' : '' %> <%= rankClass %>">
+                    <td data-label="Rank">
+                      <span class="leaderboard-rank-badge <%= entry.rank <= 3 ? 'is-top-' + entry.rank : '' %>">
+                        <%= getRankLabel(entry.rank) %>
+                      </span>
+                    </td>
+                    <td data-label="Member">
+                      <div class="leaderboard-member">
+                        <% if (entry.profilePicture) { %>
+                          <img
+                            src="<%= entry.profilePicture %>"
+                            alt="<%= entry.username %> profile picture"
+                            class="leaderboard-member-avatar"
+                          />
+                        <% } else { %>
+                          <div class="leaderboard-member-avatar placeholder">
+                            <%= entry.username ? entry.username.charAt(0).toUpperCase() : "?" %>
+                          </div>
+                        <% } %>
+                        <div class="leaderboard-member-details">
+                          <p class="name"><%= entry.username %></p>
+                          <% if (isCurrentUser) { %>
+                            <span class="badge badge-success">You</span>
+                          <% } %>
+                        </div>
                       </div>
-                    <% } %>
-                    <div>
-                      <p class="text-sm font-medium text-gray-900"><%= entry.username %></p>
-                      <% if (isCurrentUser) { %>
-                        <p class="text-xs text-emerald-600 font-semibold">That is you!</p>
-                      <% } %>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.itemsShared) %></td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.itemsSaved) %></td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.co2SavedKg, 2) %></td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-    <% } %>
-  </section>
-</div>
+                    </td>
+                    <td data-label="Items Shared"><%= formatNumber(entry.itemsShared) %></td>
+                    <td data-label="Items Saved"><%= formatNumber(entry.itemsSaved) %></td>
+                    <td data-label="CO₂ Saved (kg)"><%= formatNumber(entry.co2SavedKg, 2) %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </section>
+    </main>
 
-<%- include('partials/footer') %>
+    <%- include('partials/footer') %>
+  </body>
+</html>

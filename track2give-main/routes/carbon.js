@@ -93,6 +93,7 @@ router.get("/carbon", requireAuth, async (req, res) => {
 
     res.render("carbon", {
       currentPage: "carbon",
+      user: req.session.user,
       period,
       userStats,
       carbonHistory: history,

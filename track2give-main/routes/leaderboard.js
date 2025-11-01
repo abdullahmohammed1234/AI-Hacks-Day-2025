@@ -58,6 +58,7 @@ router.get("/leaderboard", requireAuth, async (req, res) => {
 
     return res.render("leaderboard", {
       currentPage: "leaderboard",
+      user: req.session.user,
       sort,
       limit,
       globalStats,
