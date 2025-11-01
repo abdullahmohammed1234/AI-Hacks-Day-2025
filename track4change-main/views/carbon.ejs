@@ -1,0 +1,291 @@
+<%- include('partials/header') %>
+
+<%
+  const formatNumber = (value, digits = 0) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+      return digits > 0 ? `0.${"0".repeat(digits)}` : "0";
+    }
+    return Number(value).toLocaleString("en-US", {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  };
+
+  const formatCategory = (category) => {
+    if (!category) {
+      return "Other";
+    }
+    return category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
+  const getRankLabel = (rank) => {
+    if (rank === 1) return "1st";
+    if (rank === 2) return "2nd";
+    if (rank === 3) return "3rd";
+    return `#${rank}`;
+  };
+
+  const selectedPeriod = period || "all";
+  const periodOptions = [
+    { value: "week", label: "Week" },
+    { value: "month", label: "Month" },
+    { value: "year", label: "Year" },
+    { value: "all", label: "All Time" },
+  ];
+%>
+
+<div class="container mx-auto px-4 py-8">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Carbon Impact Dashboard</h1>
+      <p class="text-gray-600 mt-2">
+        Track how your rescued food keeps emissions out of the atmosphere and see how you stack up against the community.
+      </p>
+    </div>
+    <div class="inline-flex rounded-md shadow-sm border border-gray-200 overflow-hidden">
+      <% periodOptions.forEach((option, index) => { %>
+        <a
+          href="?period=<%= option.value %>"
+          class="px-4 py-2 text-sm font-medium <%= selectedPeriod === option.value ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100' %> <%= index === 0 ? 'rounded-l-md' : '' %> <%= index === periodOptions.length - 1 ? 'rounded-r-md' : '' %>"
+        >
+          <%= option.label %>
+        </a>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- User Summary -->
+  <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4 mb-10">
+    <div class="bg-white border border-emerald-100 rounded-xl p-6 shadow-sm">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Total CO2 Saved</p>
+      <p class="text-3xl font-bold text-emerald-600"><%= formatNumber(userStats.co2SavedKg || 0, 2) %> kg</p>
+      <p class="text-sm text-gray-500">Climate impact from rescued meals</p>
+    </div>
+    <div class="bg-white border border-emerald-100 rounded-xl p-6 shadow-sm">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Items Rescued</p>
+      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(userStats.itemsSaved || 0) %></p>
+      <p class="text-sm text-gray-500">Food items eaten or shared instead of wasted</p>
+    </div>
+    <div class="bg-white border border-emerald-100 rounded-xl p-6 shadow-sm">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Cars Off The Road</p>
+      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(userEquivalents.carsRemoved || 0, 2) %></p>
+      <p class="text-sm text-gray-500">If each car emits 4.6 tons CO2 per year</p>
+    </div>
+    <div class="bg-white border border-emerald-100 rounded-xl p-6 shadow-sm">
+      <p class="text-sm uppercase text-gray-500 tracking-wide mb-2">Trees Planted Equivalent</p>
+      <p class="text-3xl font-bold text-gray-900"><%= formatNumber(userEquivalents.treesPlanted || 0, 2) %></p>
+      <p class="text-sm text-gray-500">Based on yearly absorption per mature tree</p>
+    </div>
+  </section>
+
+  <!-- History & Breakdown -->
+  <section class="grid gap-6 lg:grid-cols-2 mb-10">
+    <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-900">Carbon Savings Over Time</h2>
+        <span class="text-xs uppercase tracking-wide text-gray-400">Period: <%= selectedPeriod %></span>
+      </div>
+      <% if (carbonHistory.length > 0) { %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                <th class="px-4 py-2 text-left font-semibold text-gray-500 uppercase tracking-wider">CO2 Saved (kg)</th>
+                <th class="px-4 py-2 text-left font-semibold text-gray-500 uppercase tracking-wider">Cumulative (kg)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <% carbonHistory.forEach((entry) => { %>
+                <tr>
+                  <td class="px-4 py-2 text-gray-700"><%= entry.date %></td>
+                  <td class="px-4 py-2 text-gray-900 font-medium"><%= formatNumber(entry.co2Saved, 2) %></td>
+                  <td class="px-4 py-2 text-gray-700"><%= formatNumber(entry.cumulativeCO2, 2) %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p class="text-gray-500 text-sm">No carbon savings recorded for this period. Rescue or share an item to start building momentum.</p>
+      <% } %>
+    </div>
+
+    <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-900">Category Breakdown</h2>
+        <span class="text-xs uppercase tracking-wide text-gray-400">What you saved most</span>
+      </div>
+      <% if (categoryBreakdown.length > 0) { %>
+        <ul class="space-y-4">
+          <% categoryBreakdown.forEach((entry) => { %>
+            <li class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-900"><%= formatCategory(entry.category) %></p>
+                <p class="text-xs text-gray-500">Items rescued: <%= formatNumber(entry.itemCount) %></p>
+              </div>
+              <span class="text-sm font-medium text-emerald-600"><%= formatNumber(entry.co2Saved, 2) %> kg CO2</span>
+            </li>
+          <% }); %>
+        </ul>
+      <% } else { %>
+        <p class="text-gray-500 text-sm">Once you start logging rescued food, you will see which categories deliver the biggest carbon wins.</p>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Potential Savings -->
+  <section class="grid gap-6 lg:grid-cols-2 mb-10">
+    <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl shadow-md p-6 md:p-8">
+      <h2 class="text-2xl font-bold mb-4">Upcoming Potential</h2>
+      <p class="text-sm md:text-base text-emerald-50 mb-6">
+        Eat or donate the items below before they spoil to unlock these savings.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white/15 rounded-lg p-4">
+          <p class="text-xs uppercase tracking-wide text-emerald-100">Potential CO2</p>
+          <p class="text-xl font-semibold"><%= formatNumber(potentialSavings.potentialCO2SavedKg, 2) %> kg</p>
+        </div>
+        <div class="bg-white/15 rounded-lg p-4">
+          <p class="text-xs uppercase tracking-wide text-emerald-100">Items</p>
+          <p class="text-xl font-semibold"><%= formatNumber(potentialSavings.itemCount) %></p>
+        </div>
+        <div class="bg-white/15 rounded-lg p-4">
+          <p class="text-xs uppercase tracking-wide text-emerald-100">Cars Off Road</p>
+          <p class="text-xl font-semibold"><%= formatNumber(potentialSavings.equivalentCarsRemoved, 2) %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Soon-to-Expire Items</h2>
+      <% if (unexpiredItems.length > 0) { %>
+        <ul class="divide-y divide-gray-100">
+          <% unexpiredItems.slice(0, 6).forEach((item) => { %>
+            <li class="py-3 flex items-start justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-900"><%= item.name %></p>
+                <p class="text-xs text-gray-500">
+                  <%= formatCategory(item.category) %> • <%= formatNumber(item.quantity) %> <%= item.unit %>
+                </p>
+              </div>
+              <span class="text-xs text-gray-500">
+                Expires <%= new Date(item.expiryDate).toLocaleDateString("en-US") %>
+              </span>
+            </li>
+          <% }); %>
+        </ul>
+        <% if (unexpiredItems.length > 6) { %>
+          <p class="text-xs text-gray-400 mt-3">And <%= unexpiredItems.length - 6 %> more items in your pantry.</p>
+        <% } %>
+      <% } else { %>
+        <p class="text-gray-500 text-sm">Nothing at risk right now. Keep logging groceries so we can flag the next opportunity.</p>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Global Impact -->
+  <section class="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-10">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900">Community-Wide Carbon Savings</h2>
+        <p class="text-sm text-gray-500 mt-1">How everyone on the platform is reducing emissions.</p>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div>
+          <p class="text-xs uppercase text-gray-500">Total CO2</p>
+          <p class="text-lg font-semibold text-gray-900"><%= formatNumber(globalStats.totalCO2SavedKg, 2) %> kg</p>
+        </div>
+        <div>
+          <p class="text-xs uppercase text-gray-500">Active Users</p>
+          <p class="text-lg font-semibold text-gray-900"><%= formatNumber(globalStats.totalUsers) %></p>
+        </div>
+        <div>
+          <p class="text-xs uppercase text-gray-500">Avg / User</p>
+          <p class="text-lg font-semibold text-gray-900"><%= formatNumber(globalStats.avgCO2PerUser, 2) %> kg</p>
+        </div>
+        <div>
+          <p class="text-xs uppercase text-gray-500">Max / User</p>
+          <p class="text-lg font-semibold text-gray-900"><%= formatNumber(globalStats.maxCO2PerUser, 2) %> kg</p>
+        </div>
+      </div>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+        <p class="text-xs uppercase tracking-wide text-emerald-700">Cars Removed</p>
+        <p class="text-2xl font-bold text-emerald-900"><%= formatNumber(globalStats.equivalentCarsRemoved, 2) %></p>
+        <p class="text-sm text-emerald-700">Based on average vehicle emissions</p>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+        <p class="text-xs uppercase tracking-wide text-emerald-700">Trees Planted</p>
+        <p class="text-2xl font-bold text-emerald-900"><%= formatNumber(globalStats.equivalentTreesPlanted, 2) %></p>
+        <p class="text-sm text-emerald-700">If every kg of CO2 matched a tree's yearly absorption</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Carbon Leaderboard -->
+  <section class="bg-white border border-gray-100 rounded-xl shadow-sm">
+    <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900">Top Carbon Savers</h2>
+        <p class="text-sm text-gray-500 mt-1">Celebrating the biggest emissions reductions across the community.</p>
+      </div>
+    </header>
+
+    <% if (!topCarbonSavers || topCarbonSavers.length === 0) { %>
+      <div class="px-6 py-12 text-center text-gray-500">
+        <p>No data yet. Start rescuing food to climb the leaderboard.</p>
+      </div>
+    <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rank</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">CO2 Saved (kg)</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Shared</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Saved</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-100">
+            <% topCarbonSavers.forEach((entry) => { %>
+              <%
+                const entryUserId = String(entry.userId);
+                const isCurrentUser = currentUserId && entryUserId === currentUserId;
+              %>
+              <tr class="<%= isCurrentUser ? 'bg-emerald-50/80' : '' %>">
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">
+                  <%= getRankLabel(entry.rank) %>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  <div class="flex items-center gap-3">
+                    <% if (entry.profilePicture) { %>
+                      <img src="<%= entry.profilePicture %>" alt="<%= entry.username %> profile picture" class="h-9 w-9 rounded-full object-cover border border-emerald-100" />
+                    <% } else { %>
+                      <div class="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-semibold">
+                        <%= entry.username ? entry.username.charAt(0).toUpperCase() : "?" %>
+                      </div>
+                    <% } %>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900"><%= entry.username %></p>
+                      <% if (isCurrentUser) { %>
+                        <p class="text-xs text-emerald-600 font-semibold">You are here</p>
+                      <% } %>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.co2SavedKg, 2) %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.itemsShared) %></td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><%= formatNumber(entry.itemsSaved) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</div>
+
+<%- include('partials/footer') %>

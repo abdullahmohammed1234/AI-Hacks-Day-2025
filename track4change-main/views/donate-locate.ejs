@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+  .locate-hero { min-height: 36vh; background: linear-gradient(135deg,#10b981,#f59e0b); display:flex; align-items:center; justify-content:center; color:white; padding:5.5rem 1rem; }
+    .locate-card { background:white; padding:1.5rem; border-radius:12px; max-width:420px; width:100%; box-shadow:0 8px 30px rgba(2,6,23,0.06); }
+    input.postal { width:100%; padding:.8rem 1rem; border-radius:10px; border:1px solid #e5e7eb; margin-bottom:.75rem; }
+  </style>
+</head>
+<body>
+  <%- include('partials/header', { user: user, currentPage: currentPage }) %>
+
+  <section class="locate-hero">
+    <div class="locate-card">
+      <h2 style="margin-top:0;">Enter your postal code</h2>
+      <p style="color:#6b7280; margin-bottom:1rem;">We will use your postal code to show nearby food banks. You can choose to save it as a favorite so it appears as the default next time.</p>
+      <form method="POST" action="/donate/locate">
+        <input class="postal" name="postalCode" placeholder="e.g. 10001" value="<%= typeof favoritePostal !== 'undefined' && favoritePostal ? favoritePostal : '' %>" required />
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;">
+          <input type="checkbox" id="favorite" name="favorite">
+          <label for="favorite" style="margin:0;color:#374151;">Save as favorite postal code</label>
+        </div>
+        <button class="btn btn-primary" type="submit" style="width:100%">Find Food Banks</button>
+      </form>
+      <div style="margin-top:.75rem;text-align:center;color:#6b7280;font-size:.9rem;">
+        <a href="/donate/locate/results">Or view results for your favorite or last-used postal code</a>
+      </div>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

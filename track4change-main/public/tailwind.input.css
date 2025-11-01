@@ -1,0 +1,81 @@
+/* Tailwind CSS Input File */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Tailwind Components for Track2Give */
+@layer components {
+  .btn-gradient {
+    @apply bg-gradient-to-br from-primary-500 to-primary-600 text-white font-semibold py-2 px-6 rounded-full transition-transform hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .btn-green {
+    @apply bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors;
+  }
+
+  .card-hover {
+    @apply bg-white rounded-2xl shadow-custom p-6 transition-all hover:-translate-y-2 hover:shadow-custom-xl;
+  }
+
+  .input-primary {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  .badge-category {
+    @apply inline-block px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-dairy {
+    @apply badge-category bg-blue-100 text-blue-700;
+  }
+  .badge-meat {
+    @apply badge-category bg-red-100 text-red-700;
+  }
+  .badge-seafood {
+    @apply badge-category bg-cyan-100 text-cyan-700;
+  }
+  .badge-vegetables {
+    @apply badge-category bg-green-100 text-green-700;
+  }
+  .badge-fruits {
+    @apply badge-category bg-yellow-100 text-yellow-700;
+  }
+  .badge-grains {
+    @apply badge-category bg-amber-100 text-amber-700;
+  }
+  .badge-bakery {
+    @apply badge-category bg-orange-100 text-orange-700;
+  }
+  .badge-beverages {
+    @apply badge-category bg-purple-100 text-purple-700;
+  }
+  .badge-snacks {
+    @apply badge-category bg-pink-100 text-pink-700;
+  }
+  .badge-frozen {
+    @apply badge-category bg-blue-200 text-blue-800;
+  }
+  .badge-canned {
+    @apply badge-category bg-stone-100 text-stone-700;
+  }
+  .badge-condiments {
+    @apply badge-category bg-yellow-100 text-yellow-700;
+  }
+  .badge-other {
+    @apply badge-category bg-gray-100 text-gray-700;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #10b981 0%, #f59e0b 100%);
+  }
+
+  .bg-gradient-green {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+}

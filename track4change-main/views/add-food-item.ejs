@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Food Item - Track2Give</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <%- include('partials/header') %>
+
+    <main class="container" style="padding: 2rem 1rem; max-width: 800px">
+      <section class="card mt-8">
+        <div style="margin-bottom: 2rem">
+          <h1>Add Food Item</h1>
+          <p style="color: #666">Enter the details of your food item below</p>
+        </div>
+
+        <form id="addFoodForm" style="display: grid; gap: 1.5rem">
+          <!-- Name and Category -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem">
+            <div class="form-group">
+              <label for="name">Food Name*</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                placeholder="e.g., Banana"
+                class="form-control"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="category">Category</label>
+              <select id="category" name="category" class="form-control">
+                <option value="fruits">🍎 Fruits</option>
+                <option value="vegetables">🥕 Vegetables</option>
+                <option value="dairy">🥛 Dairy</option>
+                <option value="meat">🥩 Meat</option>
+                <option value="seafood">🐟 Seafood</option>
+                <option value="grains">🌾 Grains</option>
+                <option value="bakery">🍞 Bakery</option>
+                <option value="beverages">🥤 Beverages</option>
+                <option value="snacks">🍿 Snacks</option>
+                <option value="frozen">❄️ Frozen</option>
+                <option value="canned">🥫 Canned</option>
+                <option value="condiments">🧂 Condiments</option>
+                <option value="other">🍱 Other</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Quantity and Unit -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+            <div class="form-group">
+              <label for="quantity">Quantity*</label>
+              <input
+                type="number"
+                id="quantity"
+                name="quantity"
+                required
+                min="0"
+                step="0.1"
+                class="form-control"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="unit">Unit*</label>
+              <select id="unit" name="unit" required class="form-control">
+                <option value="item">Item</option>
+                <option value="piece">Piece</option>
+                <option value="pack">Pack</option>
+                <option value="kg">Kilograms (kg)</option>
+                <option value="g">Grams (g)</option>
+                <option value="lb">Pounds (lb)</option>
+                <option value="oz">Ounces (oz)</option>
+                <option value="L">Liters (L)</option>
+                <option value="mL">Milliliters (mL)</option>
+                <option value="cup">Cup</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Storage Location and Expiry Date -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+            <div class="form-group">
+              <label for="storageLocation">Storage Location*</label>
+              <select
+                id="storageLocation"
+                name="storageLocation"
+                required
+                class="form-control"
+              >
+                <option value="fridge">Refrigerator</option>
+                <option value="freezer">Freezer</option>
+                <option value="pantry">Pantry</option>
+                <option value="counter">Counter</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="expiryDate">Expiry Date*</label>
+              <input
+                type="date"
+                id="expiryDate"
+                name="expiryDate"
+                required
+                class="form-control"
+              />
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="3"
+              class="form-control"
+              placeholder="Add any additional information about the item..."
+            ></textarea>
+          </div>
+
+          <!-- Buttons -->
+          <div style="display: flex; gap: 1rem; margin-top: 1rem">
+            <button type="submit" class="btn btn-primary" style="flex: 1">
+              Add Item
+            </button>
+            <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <script>
+      document
+        .getElementById("addFoodForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData.entries());
+
+          try {
+            const response = await fetch("/api/food-items", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              alert("Food item added successfully!");
+              window.location.href = "/dashboard";
+            } else {
+              console.error("Full error response:", result);
+              let errorMsg =
+                "Error: " +
+                (result.details || result.error || "Failed to add food item");
+              if (result.validationErrors) {
+                errorMsg += "\n\nValidation errors:\n";
+                for (let field in result.validationErrors) {
+                  errorMsg += `- ${field}: ${result.validationErrors[field].message}\n`;
+                }
+              }
+              alert(errorMsg);
+            }
+          } catch (error) {
+            console.error("Error:", error);
+            alert("Error adding food item: " + error.message);
+          }
+        });
+    </script>
+
+    <style>
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .form-control {
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      label {
+        font-weight: 500;
+        color: #374151;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+
+      /* Add padding to main container on mobile */
+      main.container {
+        margin-top: 100px;
+      }
+
+      /* Mobile responsive styles */
+      @media (max-width: 768px) {
+        main.container {
+          margin-top: 80px;
+          padding: 1rem 0.5rem !important;
+        }
+
+        /* Make all grid layouts stack vertically on mobile */
+        #addFoodForm > div[style*="grid-template-columns"] {
+          grid-template-columns: 1fr !important;
+        }
+
+        /* Ensure form controls don't overflow */
+        .form-control {
+          max-width: 100%;
+          font-size: 16px; /* Prevents iOS zoom on focus */
+        }
+
+        /* Stack buttons vertically on very small screens */
+        @media (max-width: 480px) {
+          div[style*="display: flex"] {
+            flex-direction: column;
+          }
+
+          .btn {
+            width: 100%;
+          }
+        }
+      }
+    </style>
+  </body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings - Track2Give</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <%- include('partials/header') %>
+
+    <main
+      class="container main-content"
+      style="padding: 2rem 1rem; max-width: 900px; margin: 0 auto"
+    >
+      <!-- Page Header -->
+      <section class="page-header" style="margin-bottom: 2rem">
+        <h1>⚙️ Settings</h1>
+        <p style="color: #666; margin-top: 0.5rem">
+          Manage your account and preferences
+        </p>
+      </section>
+
+      <!-- Success/Error Messages -->
+      <div id="message-container"></div>
+
+      <!-- Notification Preferences -->
+      <section class="card" style="margin-bottom: 2rem">
+        <h2 style="margin: 0 0 1.5rem 0">🔔 Notification Preferences</h2>
+
+        <form id="notification-form" onsubmit="updateNotifications(event)">
+          <div style="display: grid; gap: 1.5rem">
+            <!-- Email Notifications -->
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                cursor: pointer;
+                padding: 1rem;
+                background: #f9fafb;
+                border-radius: 8px;
+              "
+            >
+              <input type="checkbox" name="email" <%=
+              user.notificationPreferences?.email ? 'checked' : '' %>
+              style="width: 20px; height: 20px; cursor: pointer;" >
+              <div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem">
+                  Email Notifications
+                </div>
+                <div style="font-size: 0.875rem; color: #6b7280">
+                  Receive email alerts for expiring items
+                </div>
+              </div>
+            </label>
+
+            <!-- Push Notifications -->
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                cursor: pointer;
+                padding: 1rem;
+                background: #f9fafb;
+                border-radius: 8px;
+              "
+            >
+              <input type="checkbox" name="push" <%=
+              user.notificationPreferences?.push ? 'checked' : '' %>
+              style="width: 20px; height: 20px; cursor: pointer;" >
+              <div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem">
+                  Push Notifications
+                </div>
+                <div style="font-size: 0.875rem; color: #6b7280">
+                  Receive browser push notifications
+                </div>
+              </div>
+            </label>
+
+            <!-- Expiry Reminders -->
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                cursor: pointer;
+                padding: 1rem;
+                background: #f9fafb;
+                border-radius: 8px;
+              "
+            >
+              <input type="checkbox" name="expiryReminder" <%=
+              user.notificationPreferences?.expiryReminder !== false ? 'checked'
+              : '' %> style="width: 20px; height: 20px; cursor: pointer;" >
+              <div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem">
+                  Expiry Reminders
+                </div>
+                <div style="font-size: 0.875rem; color: #6b7280">
+                  Get reminded before food expires
+                </div>
+              </div>
+            </label>
+
+            <!-- Days Before Expiry -->
+            <div style="padding: 1rem; background: #f9fafb; border-radius: 8px">
+              <label
+                for="daysBeforeExpiry"
+                style="display: block; font-weight: 600; margin-bottom: 0.5rem"
+              >
+                Remind me
+                <input
+                  type="number"
+                  id="daysBeforeExpiry"
+                  name="daysBeforeExpiry"
+                  min="1"
+                  max="14"
+                  value="<%= user.notificationPreferences?.daysBeforeExpiry || 3 %>"
+                  style="
+                    width: 60px;
+                    padding: 0.25rem 0.5rem;
+                    border: 1px solid #d1d5db;
+                    border-radius: 4px;
+                    text-align: center;
+                    margin: 0 0.25rem;
+                  "
+                />
+                days before expiry
+              </label>
+              <p
+                style="
+                  margin: 0.5rem 0 0 0;
+                  font-size: 0.875rem;
+                  color: #6b7280;
+                "
+              >
+                Get notified when items are about to expire
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            style="margin-top: 1.5rem"
+          >
+            Save Notification Preferences
+          </button>
+        </form>
+      </section>
+
+      <!-- Profile Settings -->
+      <section class="card" style="margin-bottom: 2rem">
+        <h2 style="margin: 0 0 1.5rem 0">👤 Profile Information</h2>
+
+        <form id="profile-form" onsubmit="updateProfile(event)">
+          <div style="display: grid; gap: 1.5rem">
+            <div>
+              <label
+                for="username"
+                style="display: block; font-weight: 600; margin-bottom: 0.5rem"
+                >Username</label
+              >
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value="<%= user.username %>"
+                required
+                style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 1px solid #d1d5db;
+                  border-radius: 8px;
+                  font-size: 1rem;
+                "
+              />
+            </div>
+
+            <div>
+              <label
+                for="email"
+                style="display: block; font-weight: 600; margin-bottom: 0.5rem"
+                >Email Address</label
+              >
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value="<%= user.email %>"
+                required
+                style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 1px solid #d1d5db;
+                  border-radius: 8px;
+                  font-size: 1rem;
+                "
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            style="margin-top: 1.5rem"
+          >
+            Update Profile
+          </button>
+        </form>
+      </section>
+
+      <!-- Change Password -->
+      <section class="card" style="margin-bottom: 2rem">
+        <h2 style="margin: 0 0 1.5rem 0">🔒 Change Password</h2>
+
+        <form id="password-form" onsubmit="updatePassword(event)">
+          <div style="display: grid; gap: 1.5rem">
+            <div>
+              <label
+                for="currentPassword"
+                style="display: block; font-weight: 600; margin-bottom: 0.5rem"
+                >Current Password</label
+              >
+              <input
+                type="password"
+                id="currentPassword"
+                name="currentPassword"
+                required
+                style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 1px solid #d1d5db;
+                  border-radius: 8px;
+                  font-size: 1rem;
+                "
+              />
+            </div>
+
+            <div>
+              <label
+                for="newPassword"
+                style="display: block; font-weight: 600; margin-bottom: 0.5rem"
+                >New Password</label
+              >
+              <input
+                type="password"
+                id="newPassword"
+                name="newPassword"
+                required
+                minlength="6"
+                style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 1px solid #d1d5db;
+                  border-radius: 8px;
+                  font-size: 1rem;
+                "
+              />
+              <p
+                style="
+                  margin: 0.5rem 0 0 0;
+                  font-size: 0.875rem;
+                  color: #6b7280;
+                "
+              >
+                At least 6 characters
+              </p>
+            </div>
+
+            <div>
+              <label
+                for="confirmPassword"
+                style="display: block; font-weight: 600; margin-bottom: 0.5rem"
+                >Confirm New Password</label
+              >
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                required
+                minlength="6"
+                style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 1px solid #d1d5db;
+                  border-radius: 8px;
+                  font-size: 1rem;
+                "
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            style="margin-top: 1.5rem"
+          >
+            Change Password
+          </button>
+        </form>
+      </section>
+
+      <!-- Account Actions -->
+      <section class="card" style="margin-bottom: 2rem">
+        <h2 style="margin: 0 0 1.5rem 0">🚪 Account Actions</h2>
+
+        <form action="/logout" method="POST" style="margin: 0">
+          <button type="submit" class="btn btn-secondary" style="width: 100%">
+            Sign Out
+          </button>
+        </form>
+      </section>
+
+      <!-- Danger Zone -->
+      <section class="card" style="border: 2px solid #ef4444">
+        <h2 style="margin: 0 0 1rem 0; color: #dc2626">⚠️ Danger Zone</h2>
+
+        <div
+          style="
+            background: #fef2f2;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+          "
+        >
+          <p style="margin: 0; color: #991b1b; font-size: 0.875rem">
+            <strong>Warning:</strong> This action cannot be undone. All your
+            data including food items, receipts, and impact stats will be
+            permanently deleted.
+          </p>
+        </div>
+
+        <button
+          onclick="showDeleteConfirmation()"
+          class="btn"
+          style="background: #ef4444; color: white; border: none"
+        >
+          Delete Account
+        </button>
+      </section>
+    </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      id="delete-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      "
+    >
+      <div class="card" style="max-width: 500px; margin: 1rem">
+        <h2 style="margin: 0 0 1rem 0; color: #dc2626">
+          Confirm Account Deletion
+        </h2>
+
+        <p style="margin-bottom: 1.5rem; color: #374151">
+          This will permanently delete your account and all associated data.
+          This action cannot be undone.
+        </p>
+
+        <form id="delete-form" onsubmit="deleteAccount(event)">
+          <div style="margin-bottom: 1.5rem">
+            <label
+              for="deletePassword"
+              style="display: block; font-weight: 600; margin-bottom: 0.5rem"
+            >
+              Enter your password to confirm
+            </label>
+            <input
+              type="password"
+              id="deletePassword"
+              name="password"
+              required
+              style="
+                width: 100%;
+                padding: 0.75rem;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+                font-size: 1rem;
+              "
+            />
+          </div>
+
+          <div style="display: flex; gap: 1rem">
+            <button
+              type="button"
+              onclick="hideDeleteConfirmation()"
+              class="btn btn-secondary"
+              style="flex: 1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn"
+              style="flex: 1; background: #ef4444; color: white; border: none"
+            >
+              Delete Account
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <%- include('partials/footer') %>
+
+    <script>
+      function showMessage(message, type = "success") {
+        const container = document.getElementById("message-container");
+        const bgColor = type === "success" ? "#d1fae5" : "#fee2e2";
+        const textColor = type === "success" ? "#065f46" : "#991b1b";
+
+        container.innerHTML = `
+        <div style="background: ${bgColor}; color: ${textColor}; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+          <span>${message}</span>
+          <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.25rem;">&times;</button>
+        </div>
+      `;
+
+        setTimeout(() => (container.innerHTML = ""), 5000);
+      }
+
+      async function updateNotifications(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const data = {
+          email: formData.get("email") === "on",
+          push: formData.get("push") === "on",
+          expiryReminder: formData.get("expiryReminder") === "on",
+          daysBeforeExpiry: parseInt(formData.get("daysBeforeExpiry")),
+        };
+
+        try {
+          const response = await fetch("/api/settings/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showMessage("Notification preferences updated successfully!");
+          } else {
+            throw new Error(result.message || "Failed to update preferences");
+          }
+        } catch (error) {
+          showMessage(error.message, "error");
+        }
+      }
+
+      async function updateProfile(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const data = {
+          username: formData.get("username"),
+          email: formData.get("email"),
+        };
+
+        try {
+          const response = await fetch("/api/settings/profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showMessage("Profile updated successfully!");
+          } else {
+            throw new Error(result.message || "Failed to update profile");
+          }
+        } catch (error) {
+          showMessage(error.message, "error");
+        }
+      }
+
+      async function updatePassword(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const newPassword = formData.get("newPassword");
+        const confirmPassword = formData.get("confirmPassword");
+
+        if (newPassword !== confirmPassword) {
+          showMessage("Passwords do not match", "error");
+          return;
+        }
+
+        const data = {
+          currentPassword: formData.get("currentPassword"),
+          newPassword: newPassword,
+          confirmPassword: confirmPassword,
+        };
+
+        try {
+          const response = await fetch("/api/settings/password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showMessage("Password changed successfully!");
+            e.target.reset();
+          } else {
+            throw new Error(result.message || "Failed to change password");
+          }
+        } catch (error) {
+          showMessage(error.message, "error");
+        }
+      }
+
+      function showDeleteConfirmation() {
+        document.getElementById("delete-modal").style.display = "flex";
+      }
+
+      function hideDeleteConfirmation() {
+        document.getElementById("delete-modal").style.display = "none";
+        document.getElementById("delete-form").reset();
+      }
+
+      async function deleteAccount(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const data = {
+          password: formData.get("password"),
+        };
+
+        try {
+          const response = await fetch("/api/settings/account", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            alert(
+              "Account deleted successfully. You will be redirected to the homepage."
+            );
+            window.location.href = "/";
+          } else {
+            throw new Error(result.message || "Failed to delete account");
+          }
+        } catch (error) {
+          showMessage(error.message, "error");
+          hideDeleteConfirmation();
+        }
+      }
+    </script>
+  </body>
+</html>

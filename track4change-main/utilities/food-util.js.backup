@@ -1,0 +1,320 @@
+const FoodItem = require("../models/foodItem");
+
+/**
+ * Get food items expiring within specified days
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @param {Number} days - Number of days to check (default: 3)
+ * @returns {Array} Expiring food items
+ */
+function getExpiringItems(foodItems, days = 3) {
+  const now = new Date();
+  const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+  return foodItems.filter((item) => {
+    const expiryDate = new Date(item.expiryDate);
+    return expiryDate >= now && expiryDate <= futureDate;
+  });
+}
+
+/**
+ * Get days until expiry for a food item
+ * @param {Date} expiryDate - Expiry date of the food item
+ * @returns {Number} Days until expiry (negative if expired)
+ */
+function getDaysUntilExpiry(expiryDate) {
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+  const diffTime = expiry - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
+
+/**
+ * Check if food item is expired
+ * @param {Date} expiryDate - Expiry date of the food item
+ * @returns {Boolean} True if expired
+ */
+function isExpired(expiryDate) {
+  return new Date(expiryDate) < new Date();
+}
+
+/**
+ * Get expiry status label and color
+ * @param {Date} expiryDate - Expiry date of the food item
+ * @returns {Object} Status object with label and color
+ */
+function getExpiryStatus(expiryDate) {
+  const daysUntilExpiry = getDaysUntilExpiry(expiryDate);
+
+  if (daysUntilExpiry < 0) {
+    return {
+      label: "Expired",
+      color: "red",
+      urgency: "critical",
+      days: Math.abs(daysUntilExpiry),
+    };
+  } else if (daysUntilExpiry === 0) {
+    return {
+      label: "Expires Today",
+      color: "red",
+      urgency: "critical",
+      days: 0,
+    };
+  } else if (daysUntilExpiry === 1) {
+    return {
+      label: "Expires Tomorrow",
+      color: "orange",
+      urgency: "high",
+      days: 1,
+    };
+  } else if (daysUntilExpiry <= 3) {
+    return {
+      label: `Expires in ${daysUntilExpiry} days`,
+      color: "orange",
+      urgency: "medium",
+      days: daysUntilExpiry,
+    };
+  } else if (daysUntilExpiry <= 7) {
+    return {
+      label: `Expires in ${daysUntilExpiry} days`,
+      color: "yellow",
+      urgency: "low",
+      days: daysUntilExpiry,
+    };
+  } else {
+    return {
+      label: `Expires in ${daysUntilExpiry} days`,
+      color: "green",
+      urgency: "none",
+      days: daysUntilExpiry,
+    };
+  }
+}
+
+/**
+ * Sort food items by expiry date (ascending)
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @returns {Array} Sorted food items
+ */
+function sortByExpiry(foodItems) {
+  return foodItems.sort((a, b) => {
+    return new Date(a.expiryDate) - new Date(b.expiryDate);
+  });
+}
+
+/**
+ * Group food items by storage location
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @returns {Object} Grouped items by storage location
+ */
+function groupByStorage(foodItems) {
+  return foodItems.reduce((groups, item) => {
+    const location = item.storageLocation || "other";
+    if (!groups[location]) {
+      groups[location] = [];
+    }
+    groups[location].push(item);
+    return groups;
+  }, {});
+}
+
+/**
+ * Group food items by category
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @returns {Object} Grouped items by category
+ */
+function groupByCategory(foodItems) {
+  return foodItems.reduce((groups, item) => {
+    const category = item.category || "other";
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(item);
+    return groups;
+  }, {});
+}
+
+/**
+ * Get estimated shelf life for a food category
+ * @param {String} category - Food category
+ * @param {String} storage - Storage location
+ * @returns {Number} Estimated days until expiry
+ */
+function getEstimatedShelfLife(category, storage = "fridge") {
+  const shelfLife = {
+    dairy: { fridge: 7, freezer: 90, pantry: 1, counter: 1 },
+    meat: { fridge: 3, freezer: 180, pantry: 0, counter: 0 },
+    seafood: { fridge: 2, freezer: 120, pantry: 0, counter: 0 },
+    vegetables: { fridge: 7, freezer: 180, pantry: 3, counter: 3 },
+    fruits: { fridge: 7, freezer: 180, pantry: 5, counter: 5 },
+    grains: { fridge: 180, freezer: 365, pantry: 365, counter: 180 },
+    bakery: { fridge: 7, freezer: 90, pantry: 3, counter: 3 },
+    beverages: { fridge: 30, freezer: 180, pantry: 180, counter: 90 },
+    snacks: { fridge: 60, freezer: 180, pantry: 120, counter: 90 },
+    frozen: { fridge: 1, freezer: 180, pantry: 0, counter: 0 },
+    canned: { fridge: 365, freezer: 365, pantry: 730, counter: 365 },
+    condiments: { fridge: 180, freezer: 365, pantry: 365, counter: 180 },
+    other: { fridge: 7, freezer: 90, pantry: 30, counter: 7 },
+  };
+
+  return shelfLife[category]?.[storage] || shelfLife.other[storage] || 7;
+}
+
+/**
+ * Calculate expiry date from purchase date
+ * @param {Date} purchaseDate - Date item was purchased
+ * @param {String} category - Food category
+ * @param {String} storage - Storage location
+ * @returns {Date} Estimated expiry date
+ */
+function calculateExpiryDate(purchaseDate, category, storage = "fridge") {
+  const shelfLifeDays = getEstimatedShelfLife(category, storage);
+  const expiryDate = new Date(purchaseDate);
+  expiryDate.setDate(expiryDate.getDate() + shelfLifeDays);
+  return expiryDate;
+}
+
+/**
+ * Get food items by urgency level
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @returns {Object} Items grouped by urgency
+ */
+function groupByUrgency(foodItems) {
+  const grouped = {
+    critical: [], // Expired or expires today
+    high: [], // Expires tomorrow or within 1 day
+    medium: [], // Expires within 2-3 days
+    low: [], // Expires within 4-7 days
+    none: [], // Expires after 7 days
+  };
+
+  foodItems.forEach((item) => {
+    const status = getExpiryStatus(item.expiryDate);
+    grouped[status.urgency].push(item);
+  });
+
+  return grouped;
+}
+
+/**
+ * Search food items by name
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @param {String} query - Search query
+ * @returns {Array} Matching food items
+ */
+function searchFoodItems(foodItems, query) {
+  if (!query || query.trim() === "") {
+    return foodItems;
+  }
+
+  const searchTerm = query.toLowerCase().trim();
+  return foodItems.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm)
+  );
+}
+
+/**
+ * Filter food items by category
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @param {String} category - Category to filter by
+ * @returns {Array} Filtered food items
+ */
+function filterByCategory(foodItems, category) {
+  if (!category || category === "all") {
+    return foodItems;
+  }
+  return foodItems.filter((item) => item.category === category);
+}
+
+/**
+ * Filter food items by storage location
+ * @param {Array} foodItems - Array of FoodItem documents
+ * @param {String} storage - Storage location to filter by
+ * @returns {Array} Filtered food items
+ */
+function filterByStorage(foodItems, storage) {
+  if (!storage || storage === "all") {
+    return foodItems;
+  }
+  return foodItems.filter((item) => item.storageLocation === storage);
+}
+
+/**
+ * Get category icon
+ * @param {String} category - Food category
+ * @returns {String} Emoji icon for category
+ */
+function getCategoryIcon(category) {
+  const icons = {
+    dairy: ">[",
+    meat: ">i",
+    seafood: "=",
+    vegetables: ">U",
+    fruits: "<N",
+    grains: "<>",
+    bakery: "<^",
+    beverages: ">d",
+    snacks: "<",
+    frozen: ">Ê",
+    canned: ">k",
+    condiments: ">Â",
+    other: "=æ",
+  };
+
+  return icons[category] || icons.other;
+}
+
+/**
+ * Get storage location icon
+ * @param {String} storage - Storage location
+ * @returns {String} Emoji icon for storage
+ */
+function getStorageIcon(storage) {
+  const icons = {
+    fridge: ">Ê",
+    freezer: "D",
+    pantry: "=Ä",
+    counter: "<}",
+  };
+
+  return icons[storage] || "=æ";
+}
+
+/**
+ * Format food item for display
+ * @param {Object} foodItem - FoodItem document
+ * @returns {Object} Formatted food item with additional display properties
+ */
+function formatFoodItem(foodItem) {
+  const expiryStatus = getExpiryStatus(foodItem.expiryDate);
+  const daysUntilExpiry = getDaysUntilExpiry(foodItem.expiryDate);
+
+  return {
+    ...foodItem.toObject(),
+    categoryIcon: getCategoryIcon(foodItem.category),
+    storageIcon: getStorageIcon(foodItem.storageLocation),
+    expiryStatus,
+    daysUntilExpiry,
+    isExpired: isExpired(foodItem.expiryDate),
+    displayQuantity: `${foodItem.quantity} ${foodItem.unit}`,
+  };
+}
+
+module.exports = {
+  getExpiringItems,
+  getDaysUntilExpiry,
+  isExpired,
+  getExpiryStatus,
+  sortByExpiry,
+  groupByStorage,
+  groupByCategory,
+  getEstimatedShelfLife,
+  calculateExpiryDate,
+  groupByUrgency,
+  searchFoodItems,
+  filterByCategory,
+  filterByStorage,
+  getCategoryIcon,
+  getStorageIcon,
+  formatFoodItem,
+};

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= title || 'My Food Items - Track2Give' %></title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* page-specific adjustments (borrowed styles from index.ejs) */
+    .hero-small {
+      min-height: 38vh;
+  background: linear-gradient(135deg, #10b981 0%, #f59e0b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6.5rem 2rem 2rem;
+      position: relative;
+      overflow: hidden;
+      border-bottom-left-radius: 18px;
+      border-bottom-right-radius: 18px;
+      margin-top: 100px;
+    }
+
+    .hero-small::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="white" opacity="0.06"/></svg>');
+      animation: float 18s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes float { from { transform: translateY(0);} to { transform: translateY(-60px);} }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero-small h1 { font-size: 2.5rem; color: white; margin-bottom: .5rem; }
+    .hero-small p { color: rgba(255,255,255,0.9); margin-bottom: 1rem; }
+
+    .page-content { padding: 3rem 5%; max-width: 1200px; margin: -3.25rem auto 4rem; }
+  .inventory-card { 
+      background: white; 
+      border-radius: 16px; 
+      padding: 1.5rem; 
+      box-shadow: 0 10px 30px rgba(2,6,23,0.06); 
+      margin-top: 2rem; 
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .inventory-grid { 
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    .item-card {
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: 0 8px 30px rgba(15,23,42,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      border: 1px solid rgba(15,23,42,0.03);
+      position: relative;
+      height: 100%;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .item-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(15,23,42,0.1);
+    }
+    .item-meta { color: #6b7280; font-size: .95rem; }
+    .item-title { 
+      font-size: 1.25rem; 
+      font-weight: 600; 
+      color: #111827;
+      cursor: pointer;
+      position: relative;
+    }
+    .item-title.truncated {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 12ch;
+    }
+    .item-title:hover {
+      color: #4F46E5;
+    }
+    .item-title::after {
+      content: '👆 click to expand';
+      position: absolute;
+      top: 100%;
+      left: 0;
+      font-size: 0.75rem;
+      color: #6B7280;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .item-title.truncated:hover::after {
+      opacity: 1;
+    }
+    .badge-cat { font-size: .8rem; padding: .25rem .6rem; border-radius: 999px; background: #eef2ff; color: #3730a3; }
+    .item-actions { margin-top: .75rem; display:flex; gap:.5rem; }
+    .btn-sm { 
+      padding: .45rem .8rem; 
+      border-radius: 999px; 
+      border: none; 
+      cursor: pointer; 
+      font-weight: 600;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary-sm { 
+  background: linear-gradient(90deg,#10b981,#f59e0b); 
+      color: white; 
+      box-shadow: 0 8px 24px rgba(102,126,234,0.1); 
+    }
+    .btn-ghost { 
+      background: #f3f4f6; 
+      color: #111827; 
+    }
+    .btn-danger {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+    .edit-button {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      font-size: 1rem;
+      margin: 0;
+      padding: 0;
+    }
+    .edit-button:hover {
+      background: #e5e7eb;
+      transform: scale(1.05);
+    }
+    .expired { color: #b91c1c; font-weight:700; }
+
+  .cta-button { display:inline-block; padding: .85rem 2rem; background: white; color:#10b981; border-radius:50px; font-weight:700; text-decoration:none; box-shadow:0 10px 30px rgba(0,0,0,0.12); }
+  .cta-secondary { display:inline-block; padding: .75rem 1.75rem; background: linear-gradient(90deg,#10b981,#059669); color: #fff; border-radius:50px; font-weight:700; text-decoration:none; border: none; box-shadow: 0 8px 20px rgba(6,95,70,0.12); }
+
+    .stat-card { background: rgba(0,0,0,0.04); padding:1.25rem; border-radius:14px; }
+
+  @media (max-width:768px){
+      .hero-small {
+          margin-top: 80px;
+      }
+      .page-content {
+          margin: -2.5rem 1rem 2rem;
+          padding: 1.5rem;
+      }
+      .hero-small h1 {
+          font-size: 1.75rem;
+      } 
+      .inventory-card { 
+          margin-top: 1.5rem;
+          padding: 1rem; 
+      }
+      .inventory-grid {
+          gap: 1rem;
+      }
+      .search-bar {
+          flex-direction: column;
+          gap: 1rem;
+      }
+      .search-bar input {
+          width: 100%;
+      }
+      .search-bar button {
+          width: 100%;
+      }
+  }
+  </style>
+</head>
+<body>
+  <%- include('partials/header', { user: user, currentPage: currentPage || 'food-items' }) %>
+
+  <section class="hero-small">
+    <div class="hero-content">
+      <h1 style="margin-bottom:.5rem;">My Food Inventory</h1>
+      <p style="opacity:.95; max-width:800px; margin:0 auto;">Track expiry dates, mark items as consumed, or share surplus with the community.</p>
+      <div style="margin-top:1rem;">
+        <a href="/add-food-item" class="cta-button" style="margin-right:.5rem;">+ Add Item</a>
+        <a href="/donate" class="cta-secondary">Donate / Share</a>
+      </div>
+    </div>
+  </section>
+
+  <main class="page-content">
+
+    <!-- Inventory Card -->
+    <div class="inventory-card">
+      <section class="inventory-header">
+        <div class="inventory-title">
+          <h2>Inventory</h2>
+          <div class="inventory-count"><%= (foodItems && foodItems.length) || 0 %> items in your inventory</div>
+        </div>
+
+        <form method="GET" action="/dashboard" class="search-bar">
+          <input 
+            type="search"
+            name="q" 
+            placeholder="Search items..." 
+            value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
+            class="search-input"
+          >
+          <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+      </section>
+
+      <style>
+        .inventory-header {
+          margin-bottom: 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+        
+        .inventory-title {
+          flex: 1;
+          min-width: 200px;
+        }
+        
+        .inventory-title h2 {
+          margin: 0 0 0.25rem 0;
+          color: var(--gray-900);
+        }
+        
+        .inventory-count {
+          color: var(--gray-600);
+          font-size: 0.95rem;
+        }
+        
+        .search-bar {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          min-width: 280px;
+          max-width: 100%;
+        }
+        
+        .search-input {
+          padding: 0.6rem 1rem;
+          border-radius: 999px;
+          border: 1px solid var(--gray-200);
+          background: white;
+          min-width: 220px;
+          flex: 1;
+          font-size: 0.95rem;
+        }
+        
+        .search-input:focus {
+          outline: none;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+        }
+        
+        @media (max-width: 640px) {
+          .inventory-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          
+          .search-bar {
+            width: 100%;
+          }
+          
+          .search-input {
+            width: 100%;
+          }
+        }
+      </style>
+
+      <section class="inventory-grid">
+        <% if (!foodItems || foodItems.length === 0) { %>
+          <div style="grid-column:1/-1; text-align:center; padding:3rem; border-radius:12px; background:#f8fafc; color:#94a3b8;">
+            No items found. Add a new item or scan a receipt to populate your inventory.
+          </div>
+        <% } else { %>
+          <% foodItems.forEach(item => { 
+               const daysToExpire = Math.ceil((new Date(item.expiryDate) - new Date()) / (1000*60*60*24));
+          %>
+            <div class="item-card">
+              <div style="position: absolute; top: 0.75rem; right: 0.75rem; display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+                <button onclick="showComingSoon()" class="edit-button" title="Edit item" style="position: static;">✏️</button>
+                
+                <div style="display:flex; align-items:center; gap:0.25rem;">
+                  <span style="color:#374151; font-size: 0.875rem;">BB:</span>
+                  <% if (!isNaN(daysToExpire) && daysToExpire < 0) { %>
+                    <span style="color:#dc2626; font-size: 0.875rem; font-weight: 600;">
+                  <% } else { %>
+                    <span style="color:#374151; font-size: 0.875rem; font-weight: 600;">
+                  <% } %>
+                    <% if (isNaN(new Date(item.expiryDate).getTime())) { %>
+                      --
+                    <% } else { %>
+                      <%= new Date(item.expiryDate).toLocaleDateString() %>
+                    <% } %>
+                  </span>
+                </div>
+                
+                <% if (!isNaN(daysToExpire)) { %>
+                  <% if (daysToExpire < 0) { %>
+                    <div style="font-size:.75rem; color:#dc2626; font-weight:600; display:flex; align-items:center; gap:0.25rem; white-space:nowrap;">
+                      <span>⚠️</span>
+                      <span>Expired <%= Math.abs(daysToExpire) %> day<%= Math.abs(daysToExpire) !== 1 ? 's' : '' %> ago</span>
+                    </div>
+                  <% } else if (daysToExpire <= 3) { %>
+                    <div style="font-size:.75rem; color:#b45309; white-space:nowrap;">Expiring soon</div>
+                  <% } %>
+                <% } %>
+              </div>
+              
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem; padding-top: 2rem;">
+                <div style="flex: 1;">
+                  <div class="item-title truncated" onclick="toggleTitleTruncate(this)" style="margin-bottom: 0.5rem;" title="<%= item.name %>"><%= item.name %></div>
+                  <div class="item-meta" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <span class="badge-cat"><%= item.category || 'other' %></span>
+                    <span style="color: #9CA3AF;">•</span>
+                    <span><%= item.quantity %> <%= item.unit %></span>
+                  </div>
+                </div>
+              </div>
+
+              <% if (item.notes) { %>
+                <div style="color:#6b7280; flex: 1;"><%= item.notes %></div>
+              <% } %>
+
+              <div style="color:#6b7280; font-size:.92rem; flex: 1;">Location: <strong style="color:#111827;"><%= item.storageLocation || 'Unknown' %></strong></div>
+
+              <div class="item-actions" style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: auto; justify-content: flex-start;">
+                <button class="btn-sm btn-primary-sm" style="flex: 0 1 auto;" onclick="markConsumed('<%= item._id %>')">Consumed</button>
+                <% if (daysToExpire > 2) { %>
+                  <button class="btn-sm btn-ghost" style="flex: 0 1 auto;" onclick="shareItem('<%= item._id %>', '<%= daysToExpire %>')">💚 Donate</button>
+                <% } else { %>
+                  <button class="btn-sm" disabled style="flex: 0 1 auto; background:#e5e7eb;color:#9ca3af;cursor:not-allowed;" title="Cannot donate items expiring within 2 days">💚 Donate</button>
+                <% } %>
+                <button class="btn-sm btn-danger" style="flex: 0 1 auto;" onclick="deleteItem('<%= item._id %>')" title="Remove from inventory">🗑️</button>
+              </div>
+              <% if (daysToExpire <= 2 && daysToExpire >= 0) { %>
+                <div style="margin-top:.5rem;color:#f59e0b;font-size:.85rem;">⚠️ Too close to expiry to donate</div>
+              <% } %>
+            </div>
+          <% }); %>
+        <% } %>
+      </section>
+    </div>
+    <!-- End Inventory Card -->
+
+    <% if (typeof expiringItems !== 'undefined' && expiringItems.length > 0) { %>
+      <section style="margin-top:2.5rem;">
+        <h3>Expiring Soon</h3>
+        <div style="display:flex; gap:.75rem; margin-top:.75rem; flex-wrap:wrap;">
+          <% expiringItems.forEach(e => { %>
+            <div class="card" style="padding:.6rem .9rem; border-radius:12px; background:#fff;">
+              <strong><%= e.name %></strong> — <span style="color:#6b7280;"><%= new Date(e.expiryDate).toLocaleDateString() %></span>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script>
+    async function markConsumed(id) {
+      if (!confirm('Mark this item as consumed?')) return;
+      try {
+        const res = await fetch('/api/food-items/' + id + '/consume', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }});
+        if (res.ok) location.reload();
+        else alert('Failed to update item');
+      } catch (err) { console.error(err); alert('Request error'); }
+    }
+
+    async function shareItem(id, daysToExpire) {
+      // Prevent donation if expiring within 2 days
+      if (daysToExpire <= 2) {
+        alert('Cannot donate items that expire within 2 days. Please use or consume this item yourself.');
+        return;
+      }
+
+      if (!confirm('Donate this item to the community?\n\nThis will make it available for others to claim and remove it from your inventory.')) {
+        return;
+      }
+
+      const pickup = prompt('Pickup location (optional):', '');
+      if (pickup === null) return; // User cancelled
+
+      const notes = prompt('Notes (optional):', '');
+      if (notes === null) return; // User cancelled
+
+      try {
+        // First share the item
+        const shareRes = await fetch('/api/food-items/' + id + '/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pickupLocation: pickup || '', notes: notes || '' })
+        });
+        
+        if (shareRes.ok) {
+          // Then delete it from inventory
+          const deleteRes = await fetch('/api/food-items/' + id, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (deleteRes.ok) {
+            alert('Item donated successfully and removed from your inventory! Thank you for reducing food waste! 🎉');
+            location.reload();
+          } else {
+            // If delete fails, still consider it a success since item is shared
+            alert('Item donated successfully but there was an issue removing it from your inventory. Please refresh the page.');
+            location.reload();
+          }
+        } else {
+          const json = await shareRes.json().catch(()=>({}));
+          alert(json.error || 'Failed to share item');
+        }
+      } catch (err) { console.error(err); alert('Request error'); }
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Remove this item from your inventory?')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/food-items/' + id, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (res.ok) {
+          location.reload();
+        } else {
+          alert('Failed to remove item');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Request error');
+      }
+    }
+
+    function toggleTitleTruncate(element) {
+      element.classList.toggle('truncated');
+
+      // Update the hover hint text
+      if (element.classList.contains('truncated')) {
+        element.style.color = '#111827'; // Reset color
+      } else {
+        element.style.color = '#4F46E5'; // Highlighted color
+      }
+    }
+
+    function showComingSoon() {
+      // Create banner element
+      const banner = document.createElement('div');
+      banner.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        z-index: 9999;
+        font-weight: 600;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: slideDown 0.3s ease-out;
+      `;
+
+      banner.innerHTML = `
+        <span style="font-size: 1.5rem;">🚀</span>
+        <span>Edit feature coming soon!</span>
+        <button onclick="this.parentElement.remove()" style="
+          background: rgba(255,255,255,0.2);
+          border: none;
+          color: white;
+          padding: 0.25rem 0.75rem;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+          margin-left: 1rem;
+        ">✖</button>
+      `;
+
+      document.body.appendChild(banner);
+
+      // Auto-remove after 3 seconds
+      setTimeout(() => {
+        banner.style.animation = 'slideUp 0.3s ease-out';
+        setTimeout(() => banner.remove(), 300);
+      }, 3000);
+    }
+  </script>
+
+  <style>
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+      }
+    }
+  </style>
+</body>
+</html>
