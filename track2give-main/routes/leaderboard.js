@@ -57,6 +57,7 @@ router.get("/leaderboard", requireAuth, async (req, res) => {
     ]);
 
     return res.render("leaderboard", {
+      currentPage: "leaderboard",
       sort,
       limit,
       globalStats,

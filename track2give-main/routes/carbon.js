@@ -92,6 +92,7 @@ router.get("/carbon", requireAuth, async (req, res) => {
     const currentUserId = String(userId);
 
     res.render("carbon", {
+      currentPage: "carbon",
       period,
       userStats,
       carbonHistory: history,

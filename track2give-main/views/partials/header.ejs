@@ -50,6 +50,20 @@
     </li>
     <li>
       <a
+        href="/carbon"
+        class="<%= currentPage === 'carbon' ? 'active' : '' %>"
+        >Carbon</a
+      >
+    </li>
+    <li>
+      <a
+        href="/leaderboard"
+        class="<%= currentPage === 'leaderboard' ? 'active' : '' %>"
+        >Leaderboard</a
+      >
+    </li>
+    <li>
+      <a
         href="/settings"
         class="<%= currentPage === 'settings' ? 'active' : '' %>"
         >Settings</a
@@ -139,6 +153,40 @@
       ></path>
     </svg>
     <span>Recipes</span>
+  </a>
+  <a
+    href="/carbon"
+    class="mobile-nav-item <%= currentPage === 'carbon' ? 'active' : '' %>"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      fill="currentColor"
+    >
+      <path
+        d="M12 2C8.134 2 5 5.134 5 9c0 5.522 7 13 7 13s7-7.478 7-13c0-3.866-3.134-7-7-7zm0 11.5c-2.485 0-4.5-2.015-4.5-4.5S9.515 4.5 12 4.5s4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5z"
+      ></path>
+    </svg>
+    <span>Carbon</span>
+  </a>
+  <a
+    href="/leaderboard"
+    class="mobile-nav-item <%= currentPage === 'leaderboard' ? 'active' : '' %>"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      fill="currentColor"
+    >
+      <path
+        d="M17 3V2H7v1H2v4a4 4 0 004 4h1a4 4 0 003 3.87V19H8v3h8v-3h-2v-4.13A4 4 0 0017 11h1a4 4 0 004-4V3h-5zM8 11a2 2 0 01-2-2V5h3v4a4 4 0 001.2 2.86A2 2 0 018 11zm11-2a2 2 0 01-2 2 2 2 0 01-2-2V5h4v4z"
+      ></path>
+    </svg>
+    <span>Leaders</span>
   </a>
   <a
     href="/settings"
